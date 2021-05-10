@@ -10,6 +10,11 @@ class ViconInterface:
     # CONSTRUCTOR
 
     def __init__(self, host: str):
+        """
+        Construct a Vicon interface.
+
+        :param host:    The host (IP address:port) on which the Vicon software is running.
+        """
         self.__alive: bool = False
 
         # Construct the Vicon client.
@@ -30,6 +35,7 @@ class ViconInterface:
     # DESTRUCTOR
 
     def __del__(self):
+        """Destroy the Vicon interface."""
         self.terminate()
 
     # SPECIAL METHODS
@@ -45,6 +51,7 @@ class ViconInterface:
     # PUBLIC METHODS
 
     def terminate(self) -> None:
+        """Destroy the Vicon interface."""
         if self.__alive:
             self.__client.DisableMarkerData()
             self.__client.DisableSegmentData()
@@ -53,27 +60,41 @@ class ViconInterface:
             self.__alive = False
 
     def try_get_marker_positions(self, subject_name: str) -> Optional[Dict[str, np.ndarray]]:
+        """
+        Try to get the positions of the markers for the subject with the specified name.
+
+        .. note::
+            This may fail if we move out of the range of the cameras or some of the markers are occluded.
+
+        :param subject_name:    The name of the subject.
+        :return:                The positions of the markers for the subject, indexed by name, or None if they are
+                                temporarily unavailable.
+        """
         try:
+            result: Dict[str, np.ndarray] = {}
+
+            # If there's no frame currently available, early out.
             if not self.__client.GetFrame():
                 return None
 
-            result: Dict[str, np.ndarray] = {}
-
+            # For each marker that the subject has:
             for marker_name, parent_segment in self.__client.GetMarkerNames(subject_name):
-                # TODO
+                # Get its position in the Vicon coordinate system (if known), together with its occlusion status.
                 trans, occluded = self.__client.GetMarkerGlobalTranslation(subject_name, marker_name)
 
                 # If we can't currently get the position of the marker, skip it.
                 if occluded:
                     continue
 
-                # TODO
+                # Transform the marker position from the Vicon coordinate system to our one (the Vicon coordinate
+                # system is in mm, whereas ours is in metres).
                 pos: np.ndarray = np.array([trans[0] / 1000, trans[1] / 1000, trans[2] / 1000])
 
-                # TODO
+                # Record the position in the dictionary.
                 result[marker_name] = pos
 
             return result
         except ViconDataStream.DataStreamException as e:
+            # If any exceptions are raised, print out what happened, but otherwise suppress them and keep running.
             print(e)
             return None
