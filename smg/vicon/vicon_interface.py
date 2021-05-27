@@ -1,6 +1,6 @@
 import numpy as np
 
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 from vicon_dssdk import ViconDataStream
 
 
@@ -111,6 +111,29 @@ class ViconInterface:
             # If any exceptions are raised, print out what happened, but otherwise suppress them and keep running.
             print(e)
             return None
+
+    def get_segment_names(self, subject_name: str) -> List[str]:
+        return self.__client.GetSegmentNames(subject_name)
+
+    def get_segment_pose(self, subject_name: str, segment_name) -> Optional[np.ndarray]:
+        world_from_camera: np.ndarray = np.eye(4)
+
+        t, occluded = self.__client.GetSegmentGlobalTranslation(subject_name, segment_name)
+        if occluded:
+            return None
+        else:
+            world_from_camera[0:3, 3] = np.array(t) / 1000
+
+        r, occluded = self.__client.GetSegmentGlobalRotationMatrix(subject_name, segment_name)
+        if occluded:
+            return None
+        else:
+            world_from_camera[0:3, 0:3] = r
+
+        return np.linalg.inv(world_from_camera)
+
+    def get_subject_names(self) -> List[str]:
+        return self.__client.GetSubjectNames()
 
     def terminate(self) -> None:
         """Destroy the Vicon interface."""
