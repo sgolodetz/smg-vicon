@@ -9,7 +9,7 @@ class ViconInterface:
 
     # CONSTRUCTOR
 
-    def __init__(self, host: str):
+    def __init__(self, host: str = "169.254.185.150:801"):
         """
         Construct a Vicon interface.
 
