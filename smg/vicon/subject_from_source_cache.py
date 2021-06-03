@@ -15,7 +15,10 @@ class SubjectFromSourceCache:
         """
         Construct a subject-from-source cache.
 
-        :param directory:   A directory containing the files from which to originally load the transformations.
+        .. note::
+            The transformations are originally calculated offline by a separate script and saved to disk.
+
+        :param directory:   A directory containing the files from which to load the transformations.
         """
         self.__directory: str = directory
         self.__subjects_from_sources: Dict[str, np.ndarray] = {}
@@ -30,13 +33,27 @@ class SubjectFromSourceCache:
         :return:                The subject-from-source transformation for the Vicon subject, if available,
                                 or None otherwise.
         """
+        # Try to find the transformation for the subject in the cache.
         subject_from_source: Optional[np.ndarray] = self.__subjects_from_sources.get(subject_name)
+
+        # If the transformation's present in the cache, return it.
         if subject_from_source is not None:
             return subject_from_source
+
+        # Otherwise, if the transformation is not in the cache:
         else:
+            # Look for the file containing the transformation on disk.
             filename: str = os.path.join(self.__directory, f"subject_from_source-{subject_name}.txt")
+
+            # If the file exists:
             if os.path.exists(filename):
+                # Load in the transformation.
                 subject_from_source = PoseUtil.load_pose(filename)
+
+                # Store it in the cache for future reference, and then return it.
                 self.__subjects_from_sources[subject_name] = subject_from_source
+                return subject_from_source
+
+            # Otherwise, if the file containing the transformation doesn't exist, return None.
             else:
                 return None
