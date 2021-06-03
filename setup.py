@@ -15,7 +15,8 @@ setup(
     packages=find_packages(include=["smg.vicon", "smg.vicon.*"]),
     include_package_data=True,
     install_requires=[
-        "numpy"
+        "numpy",
+        "smg-utility"
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
