@@ -9,10 +9,14 @@ class ViconInterface:
 
     # CONSTRUCTOR
 
-    # def __init__(self, host: str = "169.254.185.150:801"):  # wired
-    def __init__(self, host: str = "192.168.137.1:801"):  # wireless
+    def __init__(self, host: str = "192.168.137.1:801"):
         """
         Construct a Vicon interface.
+
+        .. note::
+            In the Wytham Flight Lab, the host seems to be "169.254.185.150:801" when connecting via Ethernet,
+            and "192.168.137.1:801" when connecting via the WiFi hotspot. I've set the default to the WiFi one,
+            since that's most useful on a day-to-day basis.
 
         :param host:    The host (IP address:port) on which the Vicon software is running.
         """
