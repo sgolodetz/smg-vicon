@@ -9,7 +9,8 @@ class ViconInterface:
 
     # CONSTRUCTOR
 
-    def __init__(self, host: str = "169.254.185.150:801"):
+    # def __init__(self, host: str = "169.254.185.150:801"):  # wired
+    def __init__(self, host: str = "192.168.137.1:801"):  # wireless
         """
         Construct a Vicon interface.
 
