@@ -11,16 +11,16 @@ class SubjectFromSourceCache:
 
     # CONSTRUCTOR
 
-    def __init__(self, directory: str):
+    def __init__(self, folder: str):
         """
         Construct a subject-from-source cache.
 
         .. note::
             The transformations are originally calculated offline by a separate script and saved to disk.
 
-        :param directory:   A directory containing the files from which to load the transformations.
+        :param folder:  A folder containing the files from which to load the transformations.
         """
-        self.__directory: str = directory
+        self.__folder: str = folder
         self.__subjects_from_sources: Dict[str, np.ndarray] = {}
 
     # PUBLIC METHODS
@@ -43,7 +43,7 @@ class SubjectFromSourceCache:
         # Otherwise, if the transformation is not in the cache:
         else:
             # Look for the file containing the transformation on disk.
-            filename: str = os.path.join(self.__directory, f"subject_from_source-{subject_name}.txt")
+            filename: str = os.path.join(self.__folder, f"subject_from_source-{subject_name}.txt")
 
             # If the file exists:
             if os.path.exists(filename):
