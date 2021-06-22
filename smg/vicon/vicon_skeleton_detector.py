@@ -26,7 +26,10 @@ class ViconSkeletonDetector:
             ("LElbow", "LWrist"),
             ("LKnee", "LHip"),
             ("LHip", "MidHip"),
+            ("LShoulder", "Neck"),
+            ("MidHip", "Neck"),
             ("MidHip", "RHip"),
+            ("Neck", "RShoulder"),
             ("RAnkle", "RKnee"),
             ("RElbow", "RShoulder"),
             ("RElbow", "RWrist"),
@@ -89,6 +92,11 @@ class ViconSkeletonDetector:
                 rwrb_pos: Optional[np.ndarray] = marker_positions.get("RWRB")
                 if rwra_pos is not None and rwrb_pos is not None:
                     keypoints["RWrist"] = Keypoint("RWrist", (rwra_pos + rwrb_pos) / 2)
+
+                lsho_pos: Optional[np.ndarray] = marker_positions.get("LSHO")
+                rsho_pos: Optional[np.ndarray] = marker_positions.get("RSHO")
+                if lsho_pos is not None and rsho_pos is not None:
+                    keypoints["Neck"] = Keypoint("Neck", (lsho_pos + rsho_pos) / 2)
 
                 skeletons.append(Skeleton3D(keypoints, self.__keypoint_pairs))
 
