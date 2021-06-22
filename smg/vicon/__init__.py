@@ -1,2 +1,3 @@
 from .subject_from_source_cache import SubjectFromSourceCache
 from .vicon_interface import ViconInterface
+from .vicon_skeleton_detector import ViconSkeletonDetector
