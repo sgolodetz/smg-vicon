@@ -8,15 +8,15 @@ from .vicon_interface import ViconInterface
 
 
 class ViconSkeletonDetector:
-    """TODO"""
+    """A 3D skeleton detector based on a Vicon system."""
 
     # CONSTRUCTOR
 
     def __init__(self, vicon: ViconInterface):
         """
-        TODO
+        Construct a 3D skeleton detector based on a Vicon system.
 
-        :param vicon:   TODO
+        :param vicon:   The Vicon interface.
         """
         self.__vicon: ViconInterface = vicon
 
@@ -36,6 +36,8 @@ class ViconSkeletonDetector:
             ("RKnee", "RHip")
         ]
 
+        # Note: These markers directly correspond to useful keypoints, whereas some other keypoints (e.g. MidHip)
+        #       have to be computed based on the positions of multiple markers (see the detect_skeletons function).
         self.__marker_to_keypoint: Dict[str, str] = {
             "LANK": "LAnkle",
             "LELB": "LElbow",
@@ -57,16 +59,20 @@ class ViconSkeletonDetector:
 
     def detect_skeletons(self) -> List[Skeleton3D]:
         """
-        TODO
+        Detect 3D skeletons in the scene using the Vicon system.
 
-        :return:    TODO
+        :return:    The detected 3D skeletons.
         """
         skeletons: List[Skeleton3D] = []
 
+        # For each relevant Vicon subject:
         for subject in self.__vicon.get_subject_names():
+            # TODO: We need a way of identifying the relevant Vicon subjects.
             if subject == "Madhu":
+                # Get the marker positions for the subject.
                 marker_positions: Dict[str, np.ndarray] = self.__vicon.get_marker_positions(subject)
 
+                # Construct the keypoints for a skeleton based on the available marker positions.
                 keypoints: Dict[str, Keypoint] = {}
 
                 for marker_name, keypoint_name in self.__marker_to_keypoint.items():
@@ -98,6 +104,7 @@ class ViconSkeletonDetector:
                 if lsho_pos is not None and rsho_pos is not None:
                     keypoints["Neck"] = Keypoint("Neck", (lsho_pos + rsho_pos) / 2)
 
+                # Add the skeleton to the list.
                 skeletons.append(Skeleton3D(keypoints, self.__keypoint_pairs))
 
         return skeletons
