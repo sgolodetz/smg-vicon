@@ -24,8 +24,8 @@ class ViconSkeletonDetector:
             ("LAnkle", "LKnee"),
             ("LElbow", "LShoulder"),
             ("LElbow", "LWrist"),
-            ("LKnee", "LHip"),
             ("LHip", "MidHip"),
+            ("LKnee", "LHip"),
             ("LShoulder", "Neck"),
             ("MidHip", "Neck"),
             ("MidHip", "RHip"),
@@ -33,7 +33,7 @@ class ViconSkeletonDetector:
             ("RAnkle", "RKnee"),
             ("RElbow", "RShoulder"),
             ("RElbow", "RWrist"),
-            ("RKnee", "RHip")
+            ("RHip", "RKnee")
         ]
 
         # Note: These markers directly correspond to useful keypoints, whereas some other keypoints (e.g. MidHip)
@@ -42,17 +42,17 @@ class ViconSkeletonDetector:
             "LANK": "LAnkle",
             "LELB": "LElbow",
             "LKNE": "LKnee",
+            "LSHO": "LShoulder",
             "LTHI": "LThigh",
             "LTIB": "LTibula",
             "LTOE": "LToe",
-            "LSHO": "LShoulder",
             "RANK": "RAnkle",
             "RELB": "RElbow",
             "RKNE": "RKnee",
+            "RSHO": "RShoulder",
             "RTHI": "RThigh",
             "RTIB": "RTibula",
-            "RTOE": "RToe",
-            "RSHO": "RShoulder"
+            "RTOE": "RToe"
         }
 
     # PUBLIC METHODS
@@ -67,7 +67,7 @@ class ViconSkeletonDetector:
 
         # For each relevant Vicon subject:
         for subject in self.__vicon.get_subject_names():
-            # TODO: We need a way of identifying the relevant Vicon subjects.
+            # FIXME: We need a proper way of identifying the relevant Vicon subjects.
             if subject == "Madhu":
                 # Get the marker positions for the subject.
                 marker_positions: Dict[str, np.ndarray] = self.__vicon.get_marker_positions(subject)
