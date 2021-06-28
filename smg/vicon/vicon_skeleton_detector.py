@@ -1,6 +1,6 @@
 import numpy as np
 
-from typing import Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 
 from smg.skeletons import Keypoint, Skeleton3D
 
@@ -12,13 +12,15 @@ class ViconSkeletonDetector:
 
     # CONSTRUCTOR
 
-    def __init__(self, vicon: ViconInterface):
+    def __init__(self, vicon: ViconInterface, *, is_person: Callable[[str], bool]):
         """
         Construct a 3D skeleton detector based on a Vicon system.
 
-        :param vicon:   The Vicon interface.
+        :param vicon:       The Vicon interface.
+        :param is_person:   A function that determines whether or not the specified subject is a person.
         """
         self.__vicon: ViconInterface = vicon
+        self.__is_person: Callable[[str], bool] = is_person
 
         self.__keypoint_pairs: List[Tuple[str, str]] = [
             ("LAnkle", "LKnee"),
@@ -67,44 +69,46 @@ class ViconSkeletonDetector:
 
         # For each relevant Vicon subject:
         for subject in self.__vicon.get_subject_names():
-            # FIXME: We need a proper way of identifying the relevant Vicon subjects.
-            if subject == "Madhu":
-                # Get the marker positions for the subject.
-                marker_positions: Dict[str, np.ndarray] = self.__vicon.get_marker_positions(subject)
+            # If the subject is not a person, skip it.
+            if not self.__is_person(subject):
+                continue
 
-                # Construct the keypoints for a skeleton based on the available marker positions.
-                keypoints: Dict[str, Keypoint] = {}
+            # Otherwise, get its marker positions.
+            marker_positions: Dict[str, np.ndarray] = self.__vicon.get_marker_positions(subject)
 
-                for marker_name, keypoint_name in self.__marker_to_keypoint.items():
-                    marker_position: Optional[np.ndarray] = marker_positions.get(marker_name)
-                    if marker_position is not None:
-                        keypoints[keypoint_name] = Keypoint(keypoint_name, marker_position)
+            # Construct the keypoints for a skeleton based on the available marker positions.
+            keypoints: Dict[str, Keypoint] = {}
 
-                lasi_pos: Optional[np.ndarray] = marker_positions.get("LASI")
-                lpsi_pos: Optional[np.ndarray] = marker_positions.get("LPSI")
-                rasi_pos: Optional[np.ndarray] = marker_positions.get("RASI")
-                rpsi_pos: Optional[np.ndarray] = marker_positions.get("RPSI")
-                if lasi_pos is not None and lpsi_pos is not None and rasi_pos is not None and rpsi_pos is not None:
-                    keypoints["LHip"] = Keypoint("LHip", (lasi_pos + lpsi_pos) / 2)
-                    keypoints["MidHip"] = Keypoint("MidHip", (lasi_pos + lpsi_pos + rasi_pos + rpsi_pos) / 4)
-                    keypoints["RHip"] = Keypoint("RHip", (rasi_pos + rpsi_pos) / 2)
+            for marker_name, keypoint_name in self.__marker_to_keypoint.items():
+                marker_position: Optional[np.ndarray] = marker_positions.get(marker_name)
+                if marker_position is not None:
+                    keypoints[keypoint_name] = Keypoint(keypoint_name, marker_position)
 
-                lwra_pos: Optional[np.ndarray] = marker_positions.get("LWRA")
-                lwrb_pos: Optional[np.ndarray] = marker_positions.get("LWRB")
-                if lwra_pos is not None and lwrb_pos is not None:
-                    keypoints["LWrist"] = Keypoint("LWrist", (lwra_pos + lwrb_pos) / 2)
+            lasi_pos: Optional[np.ndarray] = marker_positions.get("LASI")
+            lpsi_pos: Optional[np.ndarray] = marker_positions.get("LPSI")
+            rasi_pos: Optional[np.ndarray] = marker_positions.get("RASI")
+            rpsi_pos: Optional[np.ndarray] = marker_positions.get("RPSI")
+            if lasi_pos is not None and lpsi_pos is not None and rasi_pos is not None and rpsi_pos is not None:
+                keypoints["LHip"] = Keypoint("LHip", (lasi_pos + lpsi_pos) / 2)
+                keypoints["MidHip"] = Keypoint("MidHip", (lasi_pos + lpsi_pos + rasi_pos + rpsi_pos) / 4)
+                keypoints["RHip"] = Keypoint("RHip", (rasi_pos + rpsi_pos) / 2)
 
-                rwra_pos: Optional[np.ndarray] = marker_positions.get("RWRA")
-                rwrb_pos: Optional[np.ndarray] = marker_positions.get("RWRB")
-                if rwra_pos is not None and rwrb_pos is not None:
-                    keypoints["RWrist"] = Keypoint("RWrist", (rwra_pos + rwrb_pos) / 2)
+            lwra_pos: Optional[np.ndarray] = marker_positions.get("LWRA")
+            lwrb_pos: Optional[np.ndarray] = marker_positions.get("LWRB")
+            if lwra_pos is not None and lwrb_pos is not None:
+                keypoints["LWrist"] = Keypoint("LWrist", (lwra_pos + lwrb_pos) / 2)
 
-                lsho_pos: Optional[np.ndarray] = marker_positions.get("LSHO")
-                rsho_pos: Optional[np.ndarray] = marker_positions.get("RSHO")
-                if lsho_pos is not None and rsho_pos is not None:
-                    keypoints["Neck"] = Keypoint("Neck", (lsho_pos + rsho_pos) / 2)
+            rwra_pos: Optional[np.ndarray] = marker_positions.get("RWRA")
+            rwrb_pos: Optional[np.ndarray] = marker_positions.get("RWRB")
+            if rwra_pos is not None and rwrb_pos is not None:
+                keypoints["RWrist"] = Keypoint("RWrist", (rwra_pos + rwrb_pos) / 2)
 
-                # Add the skeleton to the list.
-                skeletons.append(Skeleton3D(keypoints, self.__keypoint_pairs))
+            lsho_pos: Optional[np.ndarray] = marker_positions.get("LSHO")
+            rsho_pos: Optional[np.ndarray] = marker_positions.get("RSHO")
+            if lsho_pos is not None and rsho_pos is not None:
+                keypoints["Neck"] = Keypoint("Neck", (lsho_pos + rsho_pos) / 2)
+
+            # Add the skeleton to the list.
+            skeletons.append(Skeleton3D(keypoints, self.__keypoint_pairs))
 
         return skeletons
