@@ -10,17 +10,23 @@ class OfflineViconInterface(ViconInterface):
     """
     The interface to an offline Vicon system.
 
-    An offline Vicon system is a dummy one based on saved state from a live Vicon system.
+    An offline Vicon system simulates a live Vicon system by using saved state that was originally captured live.
     """
 
     # NESTED TYPES
 
     class Subject:
-        """TODO"""
+        """The offline Vicon system's representation of a Vicon subject."""
 
         # CONSTRUCTOR
 
         def __init__(self, marker_positions: Dict[str, np.ndarray], segment_poses: Dict[str, Optional[np.ndarray]]):
+            """
+            Construct a Vicon subject.
+
+            :param marker_positions:    The positions of the subject's markers.
+            :param segment_poses:       The 6D poses of the subject's segments (if known).
+            """
             self.__marker_positions: Dict[str, np.ndarray] = marker_positions
             self.__segment_poses: Dict[str, Optional[np.ndarray]] = segment_poses
 
@@ -28,10 +34,24 @@ class OfflineViconInterface(ViconInterface):
 
         @property
         def marker_positions(self) -> Dict[str, np.ndarray]:
+            """
+            Get the positions of the subject's markers.
+
+            :return:    The positions of the subject's markers.
+            """
             return self.__marker_positions
 
         @property
         def segment_poses(self) -> Dict[str, Optional[np.ndarray]]:
+            """
+            Get the 6D poses of the subject's segments (if known).
+
+            .. note::
+                Some or all of these can be None if they're unknown. However, the dictionary will in any case
+                contain an entry for each segment the subject has.
+
+            :return:    The 6D poses of the subject's segments.
+            """
             return self.__segment_poses
 
     # CONSTRUCTOR
@@ -44,9 +64,16 @@ class OfflineViconInterface(ViconInterface):
         """
         self.__folder: str = folder
 
+        # The names of the files in the folder on disk that contain saved Vicon frame data.
         self.__frame_filenames: List[str] = sorted(os.listdir(self.__folder))
+
+        # The number originally assigned to the current frame by the live Vicon system.
         self.__frame_number: Optional[int] = None
+
+        # The index in the frame filenames array of the next frame to load.
         self.__next_frame_idx: int = 0
+
+        # The Vicon subjects present in the current frame.
         self.__subjects: Dict[str, OfflineViconInterface.Subject] = {}
 
     # DESTRUCTOR
@@ -71,15 +98,27 @@ class OfflineViconInterface(ViconInterface):
         """
         Try to get the latest frame of data from the system.
 
+        .. note::
+            For the offline Vicon system, this means loading the next frame from disk.
+
         :return:    True, if the latest frame of data was successfully obtained, or False otherwise.
         """
-        if self.__next_frame_idx < len(self.__frame_filenames):
-            frame_filename: str = self.__frame_filenames[self.__next_frame_idx]
-            self.__frame_number = int(frame_filename[:-4])
-            self.__subjects = {}
+        # Clear the existing dictionary of subjects ready for the new frame (if any).
+        self.__subjects = {}
 
+        # If there are still frames on disk that we haven't looked at:
+        if self.__next_frame_idx < len(self.__frame_filenames):
+            # Get the name of the next frame in the sequence.
+            frame_filename: str = self.__frame_filenames[self.__next_frame_idx]
+
+            # Get the number of the new frame from the filename.
+            self.__frame_number = int(frame_filename[:-4])
+
+            # Load the new frame.
             with open(os.path.join(self.__folder, frame_filename)) as f:
                 lines: List[str] = f.readlines()
+
+                # Note: The file consists of three content lines and one blank line per subject, hence the "4" here.
                 for i in range(0, len(lines), 4):
                     subject_name: str = lines[i][len("Subject: "):-1]
                     marker_positions: Dict[str, np.ndarray] = eval(
@@ -91,8 +130,12 @@ class OfflineViconInterface(ViconInterface):
 
                     self.__subjects[subject_name] = OfflineViconInterface.Subject(marker_positions, segment_poses)
 
+            # Advance the frame index.
             self.__next_frame_idx += 1
+
             return True
+
+        # Otherwise, clear the frame number and signal to the caller that there are no more frames.
         else:
             self.__frame_number = None
             return False
@@ -149,6 +192,7 @@ class OfflineViconInterface(ViconInterface):
 
     def terminate(self) -> None:
         """Destroy the Vicon interface."""
+        # Note: No cleanup is needed for the offline Vicon system, so this is a no-op.
         pass
 
     # PRIVATE STATIC METHODS
@@ -156,9 +200,9 @@ class OfflineViconInterface(ViconInterface):
     @staticmethod
     def __make_pose_matrix(flat_pose: List[float]) -> np.ndarray:
         """
-        TODO
+        Convert a flat array of 16 floats in row-major order into a 4*4 pose matrix.
 
-        :param flat_pose:   TODO
-        :return:            TODO
+        :param flat_pose:   A flat array of 16 floats in row-major order.
+        :return:            The corresponding 4*4 pose matrix.
         """
         return np.array(flat_pose).reshape(4, 4)
