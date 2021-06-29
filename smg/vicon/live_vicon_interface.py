@@ -104,7 +104,7 @@ class LiveViconInterface(ViconInterface):
                     continue
 
                 # Record the position in the dictionary.
-                result[marker_name] = ViconInterface._from_vicon_position(trans)
+                result[marker_name] = LiveViconInterface.__from_vicon_position(trans)
 
             return result
         except ViconDataStream.DataStreamException as e:
@@ -142,7 +142,7 @@ class LiveViconInterface(ViconInterface):
             if occluded:
                 return None
             else:
-                world_from_camera[0:3, 3] = ViconInterface._from_vicon_position(trans)
+                world_from_camera[0:3, 3] = LiveViconInterface.__from_vicon_position(trans)
 
             rot, occluded = self.__client.GetSegmentGlobalRotationMatrix(subject_name, segment_name)
             if occluded:
@@ -178,3 +178,18 @@ class LiveViconInterface(ViconInterface):
             self.__client.DisableUnlabeledMarkerData()
             self.__client.Disconnect()
             self.__alive = False
+
+    # PRIVATE STATIC METHODS
+
+    @staticmethod
+    def __from_vicon_position(pos) -> np.ndarray:
+        """
+        Transform a position from the Vicon coordinate system to our one.
+
+        .. note::
+            The Vicon coordinate system is in mm, whereas ours is in metres.
+
+        :param pos: The position in the Vicon coordinate system.
+        :return:    The equivalent position in our coordinate system.
+        """
+        return np.array(pos) / 1000

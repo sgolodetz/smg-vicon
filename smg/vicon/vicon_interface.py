@@ -74,18 +74,3 @@ class ViconInterface(ABC):
     def terminate(self) -> None:
         """Destroy the Vicon interface."""
         pass
-
-    # PROTECTED STATIC METHODS
-
-    @staticmethod
-    def _from_vicon_position(pos) -> np.ndarray:
-        """
-        Transform a position from the Vicon coordinate system to our one.
-
-        .. note::
-            The Vicon coordinate system is in mm, whereas ours is in metres.
-
-        :param pos: The position in the Vicon coordinate system.
-        :return:    The equivalent position in our coordinate system.
-        """
-        return np.array(pos) / 1000

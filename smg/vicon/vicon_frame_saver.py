@@ -51,7 +51,6 @@ class ViconFrameSaver:
             output += "\n\n"
 
         filename: str = os.path.join(self.__folder, f"{self.__vicon.get_frame_number()}.txt")
-        print(filename)
 
         with open(filename, "w") as f:
             f.write(output)
