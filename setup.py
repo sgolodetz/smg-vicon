@@ -16,6 +16,7 @@ setup(
     include_package_data=True,
     install_requires=[
         "numpy",
+        "smg-skeletons",
         "smg-utility"
     ],
     classifiers=[
