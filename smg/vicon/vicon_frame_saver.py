@@ -38,16 +38,27 @@ class ViconFrameSaver:
             output += "\n"
 
             segment_names: List[str] = self.__vicon.get_segment_names(subject_name)
-            segments: Dict[str, Optional[np.ndarray]] = {}
+            segment_poses: Dict[str, Optional[np.ndarray]] = {}
+            segment_local_rotations: Dict[str, Optional[np.ndarray]] = {}
             for segment_name in segment_names:
                 segment_pose: Optional[np.ndarray] = self.__vicon.get_segment_pose(subject_name, segment_name)
                 if segment_pose is not None:
                     segment_pose = segment_pose.ravel()
-                segments[segment_name] = segment_pose
+                segment_poses[segment_name] = segment_pose
+
+                segment_local_rotation: Optional[np.ndarray] = self.__vicon.get_segment_local_rotation(subject_name, segment_name)
+                if segment_local_rotation is not None:
+                    segment_local_rotation = segment_local_rotation.ravel()
+                segment_local_rotations[segment_name] = segment_local_rotation
 
             output += "Segment Poses: "
             with np.printoptions(linewidth=np.inf):
-                output += repr(segments)
+                output += repr(segment_poses)
+            output += "\n"
+
+            output += "Segment Local Rotations: "
+            with np.printoptions(linewidth=np.inf):
+                output += repr(segment_local_rotations)
             output += "\n\n"
 
         filename: str = os.path.join(self.__folder, f"{self.__vicon.get_frame_number()}.txt")

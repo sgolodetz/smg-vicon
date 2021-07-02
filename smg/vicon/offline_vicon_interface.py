@@ -20,14 +20,17 @@ class OfflineViconInterface(ViconInterface):
 
         # CONSTRUCTOR
 
-        def __init__(self, marker_positions: Dict[str, np.ndarray], segment_poses: Dict[str, Optional[np.ndarray]]):
+        def __init__(self, marker_positions: Dict[str, np.ndarray], segment_poses: Dict[str, Optional[np.ndarray]],
+                     segment_local_rotations: Dict[str, Optional[np.ndarray]]):
             """
             Construct a Vicon subject.
 
-            :param marker_positions:    The positions of the subject's markers.
-            :param segment_poses:       The 6D poses of the subject's segments (if known).
+            :param marker_positions:        The positions of the subject's markers.
+            :param segment_poses:           The 6D poses of the subject's segments (if known).
+            :param segment_local_rotations: TODO
             """
             self.__marker_positions: Dict[str, np.ndarray] = marker_positions
+            self.__segment_local_rotations: Dict[str, Optional[np.ndarray]] = segment_local_rotations
             self.__segment_poses: Dict[str, Optional[np.ndarray]] = segment_poses
 
         # PROPERTIES
@@ -40,6 +43,10 @@ class OfflineViconInterface(ViconInterface):
             :return:    The positions of the subject's markers.
             """
             return self.__marker_positions
+
+        @property
+        def segment_local_rotations(self) -> Dict[str, Optional[np.ndarray]]:
+            return self.__segment_local_rotations
 
         @property
         def segment_poses(self) -> Dict[str, Optional[np.ndarray]]:
@@ -118,8 +125,8 @@ class OfflineViconInterface(ViconInterface):
             with open(os.path.join(self.__folder, frame_filename)) as f:
                 lines: List[str] = f.readlines()
 
-                # Note: The file consists of three content lines and one blank line per subject, hence the "4" here.
-                for i in range(0, len(lines), 4):
+                # Note: The file consists of four content lines and one blank line per subject, hence the "5" here.
+                for i in range(0, len(lines), 5):
                     subject_name: str = lines[i][len("Subject: "):-1]
                     marker_positions: Dict[str, np.ndarray] = eval(
                         lines[i+1][len("Marker Positions: "):-1], {'array': np.array}
@@ -127,8 +134,13 @@ class OfflineViconInterface(ViconInterface):
                     segment_poses: Dict[str, Optional[np.ndarray]] = eval(
                         lines[i+2][len("Segment Poses: "):-1], {'array': OfflineViconInterface.__make_pose_matrix}
                     )
+                    segment_local_rotations: Dict[str, Optional[np.ndarray]] = eval(
+                        lines[i+3][len("Segment Local Rotations: "):-1], {'array': OfflineViconInterface.__make_rotation_matrix}
+                    )
 
-                    self.__subjects[subject_name] = OfflineViconInterface.Subject(marker_positions, segment_poses)
+                    self.__subjects[subject_name] = OfflineViconInterface.Subject(
+                        marker_positions, segment_poses, segment_local_rotations
+                    )
 
             # Advance the frame index.
             self.__next_frame_idx += 1
@@ -158,6 +170,10 @@ class OfflineViconInterface(ViconInterface):
         """
         subject: Optional[OfflineViconInterface.Subject] = self.__subjects.get(subject_name)
         return subject.marker_positions if subject is not None else {}
+
+    def get_segment_local_rotation(self, subject_name: str, segment_name: str) -> Optional[np.ndarray]:
+        subject: Optional[OfflineViconInterface.Subject] = self.__subjects.get(subject_name)
+        return subject.segment_local_rotations.get(segment_name) if subject is not None else None
 
     def get_segment_names(self, subject_name: str) -> List[str]:
         """
@@ -206,3 +222,7 @@ class OfflineViconInterface(ViconInterface):
         :return:            The corresponding 4*4 pose matrix.
         """
         return np.array(flat_pose).reshape(4, 4)
+
+    @staticmethod
+    def __make_rotation_matrix(flat_rot: List[float]) -> np.ndarray:
+        return np.array(flat_rot).reshape(3, 3)

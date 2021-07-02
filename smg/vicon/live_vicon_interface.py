@@ -112,6 +112,15 @@ class LiveViconInterface(ViconInterface):
             print(e)
             return {}
 
+    def get_segment_local_rotation(self, subject_name: str, segment_name: str) -> Optional[np.ndarray]:
+        try:
+            rot, occluded = self.__client.GetSegmentLocalRotationMatrix(subject_name, segment_name)
+            return np.array(rot) if not occluded else None
+        except ViconDataStream.DataStreamException as e:
+            # If any exceptions are raised, print out what happened, but otherwise suppress them and keep running.
+            print(e)
+            return None
+
     def get_segment_names(self, subject_name: str) -> List[str]:
         """
         Try to get the names of all of the segments for the specified subject.
@@ -126,15 +135,6 @@ class LiveViconInterface(ViconInterface):
             # If any exceptions are raised, print out what happened, but otherwise suppress them and keep running.
             print(e)
             return []
-
-    def get_segment_local_rotation(self, subject_name: str, segment_name: str) -> Optional[np.ndarray]:
-        try:
-            rot, occluded = self.__client.GetSegmentLocalRotationMatrix(subject_name, segment_name)
-            return rot if not occluded else None
-        except ViconDataStream.DataStreamException as e:
-            # If any exceptions are raised, print out what happened, but otherwise suppress them and keep running.
-            print(e)
-            return None
 
     def get_segment_pose(self, subject_name: str, segment_name: str) -> Optional[np.ndarray]:
         """

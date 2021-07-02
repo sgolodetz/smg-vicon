@@ -39,6 +39,10 @@ class ViconInterface(ABC):
         pass
 
     @abstractmethod
+    def get_segment_local_rotation(self, subject_name: str, segment_name: str) -> Optional[np.ndarray]:
+        pass
+
+    @abstractmethod
     def get_segment_names(self, subject_name: str) -> List[str]:
         """
         Try to get the names of all of the segments for the specified subject.

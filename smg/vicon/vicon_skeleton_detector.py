@@ -123,16 +123,13 @@ class ViconSkeletonDetector:
             if lsho_pos is not None and rsho_pos is not None:
                 keypoints["Neck"] = Keypoint("Neck", (lsho_pos + rsho_pos) / 2)
 
-            # global_keypoint_poses: Dict[str, np.ndarray] = {"MidHip": np.eye(4)}
-            # local_keypoint_rotations: Dict[str, np.ndarray] = {}
-            #
-            # from smg.vicon import LiveViconInterface
-            # from typing import cast
-            # live_vicon: LiveViconInterface = cast(LiveViconInterface, self.__vicon)
-            # for segment, keypoint_name in self.__segment_to_keypoint.items():
-            #     local_keypoint_rotation: Optional[np.ndarray] = live_vicon.get_segment_local_rotation(subject, segment)
-            #     if local_keypoint_rotation is not None:
-            #         local_keypoint_rotations[keypoint_name] = local_keypoint_rotation
+            global_keypoint_poses: Dict[str, np.ndarray] = {"MidHip": np.eye(4)}
+            local_keypoint_rotations: Dict[str, np.ndarray] = {}
+
+            for segment, keypoint_name in self.__segment_to_keypoint.items():
+                local_keypoint_rotation: Optional[np.ndarray] = self.__vicon.get_segment_local_rotation(subject, segment)
+                if local_keypoint_rotation is not None:
+                    local_keypoint_rotations[keypoint_name] = local_keypoint_rotation
 
             # Add the skeleton to the list.
             skeletons.append(Skeleton3D(keypoints, self.__keypoint_pairs))
