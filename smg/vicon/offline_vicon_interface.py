@@ -170,7 +170,7 @@ class OfflineViconInterface(ViconInterface):
         subject: Optional[OfflineViconInterface.Subject] = self.__subjects.get(subject_name)
         return list(subject.segment_poses.keys()) if subject is not None else None
 
-    def get_segment_pose(self, subject_name: str, segment_name) -> Optional[np.ndarray]:
+    def get_segment_pose(self, subject_name: str, segment_name: str) -> Optional[np.ndarray]:
         """
         Try to get the current 6D pose of the specified segment for the specified subject.
 

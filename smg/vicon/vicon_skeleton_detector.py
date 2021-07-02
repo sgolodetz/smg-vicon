@@ -57,6 +57,13 @@ class ViconSkeletonDetector:
             "RTOE": "RToe"
         }
 
+        self.__segment_to_keypoint: Dict[str, str] = {
+            "L_Elbow": "LElbow",
+            "R_Elbow": "RElbow",
+            # "L_Femur": "LHip",
+            # "R_Femur": "RHip"
+        }
+
     # PUBLIC METHODS
 
     def detect_skeletons(self) -> List[Skeleton3D]:
@@ -88,10 +95,18 @@ class ViconSkeletonDetector:
             lpsi_pos: Optional[np.ndarray] = marker_positions.get("LPSI")
             rasi_pos: Optional[np.ndarray] = marker_positions.get("RASI")
             rpsi_pos: Optional[np.ndarray] = marker_positions.get("RPSI")
-            if lasi_pos is not None and lpsi_pos is not None and rasi_pos is not None and rpsi_pos is not None:
+
+            if lasi_pos is not None and lpsi_pos is not None:
                 keypoints["LHip"] = Keypoint("LHip", (lasi_pos + lpsi_pos) / 2)
-                keypoints["MidHip"] = Keypoint("MidHip", (lasi_pos + lpsi_pos + rasi_pos + rpsi_pos) / 4)
+            if rasi_pos is not None and rpsi_pos is not None:
                 keypoints["RHip"] = Keypoint("RHip", (rasi_pos + rpsi_pos) / 2)
+
+            if lasi_pos is not None and lpsi_pos is not None and rasi_pos is not None and rpsi_pos is not None:
+                keypoints["MidHip"] = Keypoint("MidHip", (lasi_pos + lpsi_pos + rasi_pos + rpsi_pos) / 4)
+            elif lasi_pos is not None and rpsi_pos is not None:
+                keypoints["MidHip"] = Keypoint("MidHip", (lasi_pos + rpsi_pos) / 2)
+            elif rasi_pos is not None and lpsi_pos is not None:
+                keypoints["MidHip"] = Keypoint("MidHip", (rasi_pos + lpsi_pos) / 2)
 
             lwra_pos: Optional[np.ndarray] = marker_positions.get("LWRA")
             lwrb_pos: Optional[np.ndarray] = marker_positions.get("LWRB")
@@ -108,7 +123,21 @@ class ViconSkeletonDetector:
             if lsho_pos is not None and rsho_pos is not None:
                 keypoints["Neck"] = Keypoint("Neck", (lsho_pos + rsho_pos) / 2)
 
+            # global_keypoint_poses: Dict[str, np.ndarray] = {"MidHip": np.eye(4)}
+            # local_keypoint_rotations: Dict[str, np.ndarray] = {}
+            #
+            # from smg.vicon import LiveViconInterface
+            # from typing import cast
+            # live_vicon: LiveViconInterface = cast(LiveViconInterface, self.__vicon)
+            # for segment, keypoint_name in self.__segment_to_keypoint.items():
+            #     local_keypoint_rotation: Optional[np.ndarray] = live_vicon.get_segment_local_rotation(subject, segment)
+            #     if local_keypoint_rotation is not None:
+            #         local_keypoint_rotations[keypoint_name] = local_keypoint_rotation
+
             # Add the skeleton to the list.
             skeletons.append(Skeleton3D(keypoints, self.__keypoint_pairs))
+            # skeletons.append(Skeleton3D(
+            #     keypoints, self.__keypoint_pairs, global_keypoint_poses, local_keypoint_rotations
+            # ))
 
         return skeletons

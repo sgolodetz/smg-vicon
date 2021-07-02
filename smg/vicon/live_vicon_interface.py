@@ -127,7 +127,16 @@ class LiveViconInterface(ViconInterface):
             print(e)
             return []
 
-    def get_segment_pose(self, subject_name: str, segment_name) -> Optional[np.ndarray]:
+    def get_segment_local_rotation(self, subject_name: str, segment_name: str) -> Optional[np.ndarray]:
+        try:
+            rot, occluded = self.__client.GetSegmentLocalRotationMatrix(subject_name, segment_name)
+            return rot if not occluded else None
+        except ViconDataStream.DataStreamException as e:
+            # If any exceptions are raised, print out what happened, but otherwise suppress them and keep running.
+            print(e)
+            return None
+
+    def get_segment_pose(self, subject_name: str, segment_name: str) -> Optional[np.ndarray]:
         """
         Try to get the current 6D pose of the specified segment for the specified subject.
 

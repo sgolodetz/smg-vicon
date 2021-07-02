@@ -50,7 +50,7 @@ class ViconInterface(ABC):
         pass
 
     @abstractmethod
-    def get_segment_pose(self, subject_name: str, segment_name) -> Optional[np.ndarray]:
+    def get_segment_pose(self, subject_name: str, segment_name: str) -> Optional[np.ndarray]:
         """
         Try to get the current 6D pose of the specified segment for the specified subject.
 
