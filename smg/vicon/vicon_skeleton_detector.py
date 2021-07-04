@@ -23,6 +23,7 @@ class ViconSkeletonDetector:
         self.__is_person: Callable[[str], bool] = is_person
 
         self.__keypoint_pairs: List[Tuple[str, str]] = [
+            ("Head", "Neck"),
             ("LAnkle", "LKnee"),
             ("LElbow", "LShoulder"),
             ("LElbow", "LWrist"),
@@ -91,37 +92,22 @@ class ViconSkeletonDetector:
                 if marker_position is not None:
                     keypoints[keypoint_name] = Keypoint(keypoint_name, marker_position)
 
-            lasi_pos: Optional[np.ndarray] = marker_positions.get("LASI")
-            lpsi_pos: Optional[np.ndarray] = marker_positions.get("LPSI")
-            rasi_pos: Optional[np.ndarray] = marker_positions.get("RASI")
-            rpsi_pos: Optional[np.ndarray] = marker_positions.get("RPSI")
-
-            if lasi_pos is not None and lpsi_pos is not None:
-                keypoints["LHip"] = Keypoint("LHip", (lasi_pos + lpsi_pos) / 2)
-            if rasi_pos is not None and rpsi_pos is not None:
-                keypoints["RHip"] = Keypoint("RHip", (rasi_pos + rpsi_pos) / 2)
-
-            if lasi_pos is not None and lpsi_pos is not None and rasi_pos is not None and rpsi_pos is not None:
-                keypoints["MidHip"] = Keypoint("MidHip", (lasi_pos + lpsi_pos + rasi_pos + rpsi_pos) / 4)
-            elif lasi_pos is not None and rpsi_pos is not None:
-                keypoints["MidHip"] = Keypoint("MidHip", (lasi_pos + rpsi_pos) / 2)
-            elif rasi_pos is not None and lpsi_pos is not None:
-                keypoints["MidHip"] = Keypoint("MidHip", (rasi_pos + lpsi_pos) / 2)
-
-            lwra_pos: Optional[np.ndarray] = marker_positions.get("LWRA")
-            lwrb_pos: Optional[np.ndarray] = marker_positions.get("LWRB")
-            if lwra_pos is not None and lwrb_pos is not None:
-                keypoints["LWrist"] = Keypoint("LWrist", (lwra_pos + lwrb_pos) / 2)
-
-            rwra_pos: Optional[np.ndarray] = marker_positions.get("RWRA")
-            rwrb_pos: Optional[np.ndarray] = marker_positions.get("RWRB")
-            if rwra_pos is not None and rwrb_pos is not None:
-                keypoints["RWrist"] = Keypoint("RWrist", (rwra_pos + rwrb_pos) / 2)
-
-            lsho_pos: Optional[np.ndarray] = marker_positions.get("LSHO")
-            rsho_pos: Optional[np.ndarray] = marker_positions.get("RSHO")
-            if lsho_pos is not None and rsho_pos is not None:
-                keypoints["Neck"] = Keypoint("Neck", (lsho_pos + rsho_pos) / 2)
+            ViconSkeletonDetector.__try_add_keypoint(
+                "Head", [["LBHD", "LFHD", "RBHD", "RFHD"]], keypoints, marker_positions
+            )
+            ViconSkeletonDetector.__try_add_keypoint("LHip", [["LASI", "LPSI"]], keypoints, marker_positions)
+            ViconSkeletonDetector.__try_add_keypoint(
+                "LWrist", [["LWRA", "LWRB"], ["LWRA"], ["LWRB"], ["LFIN"]], keypoints, marker_positions
+            )
+            ViconSkeletonDetector.__try_add_keypoint(
+                "MidHip", [["LASI", "LPSI", "RASI", "RPSI"], ["LASI", "RPSI"], ["RASI", "LPSI"]],
+                keypoints, marker_positions
+            )
+            ViconSkeletonDetector.__try_add_keypoint("Neck", [["LSHO", "RSHO"]], keypoints, marker_positions)
+            ViconSkeletonDetector.__try_add_keypoint("RHip", [["RASI", "RPSI"]], keypoints, marker_positions)
+            ViconSkeletonDetector.__try_add_keypoint(
+                "RWrist", [["RWRA", "RWRB"], ["RWRA"], ["RWRB"], ["RFIN"]], keypoints, marker_positions
+            )
 
             global_keypoint_poses: Dict[str, np.ndarray] = {"MidHip": np.eye(4)}
             local_keypoint_rotations: Dict[str, np.ndarray] = {}
@@ -138,3 +124,14 @@ class ViconSkeletonDetector:
             # ))
 
         return skeletons
+
+    # PRIVATE STATIC METHODS
+
+    @staticmethod
+    def __try_add_keypoint(keypoint_name: str, base_marker_sets: List[List[str]],
+                           keypoints: Dict[str, Keypoint], marker_positions: Dict[str, np.ndarray]) -> None:
+        for base_marker_set in base_marker_sets:
+            base_marker_positions: List[Optional[np.ndarray]] = [marker_positions.get(m) for m in base_marker_set]
+            if all([p is not None for p in base_marker_positions]):
+                keypoints[keypoint_name] = Keypoint(keypoint_name, np.mean(base_marker_positions, axis=0))
+                return
