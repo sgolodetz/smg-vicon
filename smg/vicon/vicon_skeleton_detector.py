@@ -2,7 +2,7 @@ import numpy as np
 
 from typing import Callable, Dict, List, Optional, Tuple
 
-from smg.skeletons import Keypoint, Skeleton3D
+from smg.skeletons import Keypoint, KeypointOrienter, Skeleton3D
 
 from .vicon_interface import ViconInterface
 
@@ -61,10 +61,12 @@ class ViconSkeletonDetector:
         self.__segment_to_keypoint: Dict[str, str] = {
             "L_Elbow": "LElbow",
             "R_Elbow": "RElbow",
+            "L_Femur": "LHip",
+            "R_Femur": "RHip",
             "L_Humerus": "LShoulder",
             "R_Humerus": "RShoulder",
-            # "L_Femur": "LHip",
-            # "R_Femur": "RHip"
+            "L_Tibia": "LKnee",
+            "R_Tibia": "RKnee"
         }
 
         rm = np.array([[0, -1, 0], [1, 0, 0], [0, 0, 1]])
@@ -74,16 +76,22 @@ class ViconSkeletonDetector:
             "LElbow": lm,  # FIXME
             "LShoulder": lm,  # FIXME
             "MidHip": np.eye(3),
-            "Neck": np.eye(3),  # FIXME
+            "Neck": np.array([[-1, 0, 0], [0, -1, 0], [0, 0, 1]]),
             "RElbow": rm,  # FIXME
+            "RHip": np.eye(3),  # FIXME,
+            "RKnee": np.eye(3),  # FIXME
             "RShoulder": rm  # FIXME
         }
 
         self.__keypoint_parents: Dict[str, str] = {
             "LElbow": "LShoulder",
+            "LHip": "MidHip",
+            "LKnee": "LHip",
             "LShoulder": "Neck",
             "Neck": "MidHip",
             "RElbow": "RShoulder",
+            "RHip": "MidHip",
+            "RKnee": "RHip",
             "RShoulder": "Neck"
         }
 
@@ -139,11 +147,14 @@ class ViconSkeletonDetector:
                 if keypoint_from_world is not None:
                     global_keypoint_poses[keypoint_name] = np.linalg.inv(keypoint_from_world)
 
-            global_keypoint_poses["MidHip"] = np.eye(4)
-            global_keypoint_poses["MidHip"][0:3, 3] = keypoints["MidHip"].position
-            # global_keypoint_poses["MidHip"] = np.linalg.inv(self.__vicon.get_segment_pose(subject, "Root"))
-            global_keypoint_poses["Neck"] = np.eye(4)
-            global_keypoint_poses["Neck"][0:3, 3] = keypoints["Neck"].position
+            global_keypoint_poses["MidHip"] = KeypointOrienter(
+                keypoints, "MidHip", "Neck", None, ("RHip", "LHip", "Neck"),
+                self.__midhip_from_rests["MidHip"]
+            ).global_pose
+            global_keypoint_poses["Neck"] = KeypointOrienter(
+                keypoints, "Neck", "MidHip", "MidHip", ("LShoulder", "RShoulder", "MidHip"),
+                self.__midhip_from_rests["Neck"]
+            ).global_pose
 
             local_keypoint_rotations: Dict[str, np.ndarray] = Skeleton3D.compute_local_keypoint_rotations(
                 global_keypoint_poses=global_keypoint_poses,
@@ -152,30 +163,14 @@ class ViconSkeletonDetector:
             )
 
             # Add the skeleton to the list.
-            skeletons.append(Skeleton3D(keypoints, self.__keypoint_pairs))
-            # skeletons.append(Skeleton3D(
-            #     keypoints, self.__keypoint_pairs, global_keypoint_poses, local_keypoint_rotations
-            # ))
+            # skeletons.append(Skeleton3D(keypoints, self.__keypoint_pairs))
+            skeletons.append(Skeleton3D(
+                keypoints, self.__keypoint_pairs, global_keypoint_poses, local_keypoint_rotations
+            ))
 
         return skeletons
 
     # PRIVATE STATIC METHODS
-
-    # @staticmethod
-    # def __compute_global_keypoint_pose(keypoints: Dict[str, Keypoint], keypoint_name: str, other_keypoint_name: str,
-    #                                    triangle_keypoint_names: List[str]) -> Optional[np.ndarray]:
-    #     other_keypoint: Optional[Keypoint] = keypoints.get(other_keypoint_name)
-    #     if other_keypoint is None:
-    #         return None
-    #
-    #     vs: List[np.ndarray] = []
-    #     for i in range(3):
-    #         pose: Optional[np.ndarray] = keypoints.get(triangle_keypoint_names[i])
-    #         if pose is not None:
-    #             vs.append(pose[0:3, 3])
-    #
-    #     import vg
-    #     y = vg.normalize(other_keypoint_pose[0:3, 3] - )
 
     @staticmethod
     def __try_add_keypoint(keypoint_name: str, base_marker_sets: List[List[str]],
