@@ -61,8 +61,30 @@ class ViconSkeletonDetector:
         self.__segment_to_keypoint: Dict[str, str] = {
             "L_Elbow": "LElbow",
             "R_Elbow": "RElbow",
+            "L_Humerus": "LShoulder",
+            "R_Humerus": "RShoulder",
             # "L_Femur": "LHip",
             # "R_Femur": "RHip"
+        }
+
+        rm = np.array([[0, -1, 0], [1, 0, 0], [0, 0, 1]])
+        lm = np.array([[0, 1, 0], [-1, 0, 0], [0, 0, 1]])
+
+        self.__midhip_from_rests: Dict[str, np.ndarray] = {
+            "LElbow": lm,  # FIXME
+            "LShoulder": lm,  # FIXME
+            "MidHip": np.eye(3),
+            "Neck": np.eye(3),  # FIXME
+            "RElbow": rm,  # FIXME
+            "RShoulder": rm  # FIXME
+        }
+
+        self.__keypoint_parents: Dict[str, str] = {
+            "LElbow": "LShoulder",
+            "LShoulder": "Neck",
+            "Neck": "MidHip",
+            "RElbow": "RShoulder",
+            "RShoulder": "Neck"
         }
 
     # PUBLIC METHODS
@@ -109,13 +131,25 @@ class ViconSkeletonDetector:
                 "RWrist", [["RWRA", "RWRB"], ["RWRA"], ["RWRB"], ["RFIN"]], keypoints, marker_positions
             )
 
-            global_keypoint_poses: Dict[str, np.ndarray] = {"MidHip": np.eye(4)}
-            local_keypoint_rotations: Dict[str, np.ndarray] = {}
+            global_keypoint_poses: Dict[str, np.ndarray] = {}
 
             for segment, keypoint_name in self.__segment_to_keypoint.items():
-                local_keypoint_rotation: Optional[np.ndarray] = self.__vicon.get_segment_local_rotation(subject, segment)
-                if local_keypoint_rotation is not None:
-                    local_keypoint_rotations[keypoint_name] = local_keypoint_rotation
+                # TODO: Consider making get_segment_pose return w_t_c poses instead of c_t_w ones.
+                keypoint_from_world: Optional[np.ndarray] = self.__vicon.get_segment_pose(subject, segment)
+                if keypoint_from_world is not None:
+                    global_keypoint_poses[keypoint_name] = np.linalg.inv(keypoint_from_world)
+
+            global_keypoint_poses["MidHip"] = np.eye(4)
+            global_keypoint_poses["MidHip"][0:3, 3] = keypoints["MidHip"].position
+            # global_keypoint_poses["MidHip"] = np.linalg.inv(self.__vicon.get_segment_pose(subject, "Root"))
+            global_keypoint_poses["Neck"] = np.eye(4)
+            global_keypoint_poses["Neck"][0:3, 3] = keypoints["Neck"].position
+
+            local_keypoint_rotations: Dict[str, np.ndarray] = Skeleton3D.compute_local_keypoint_rotations(
+                global_keypoint_poses=global_keypoint_poses,
+                keypoint_parents=self.__keypoint_parents,
+                midhip_from_rests=self.__midhip_from_rests
+            )
 
             # Add the skeleton to the list.
             skeletons.append(Skeleton3D(keypoints, self.__keypoint_pairs))
@@ -126,6 +160,22 @@ class ViconSkeletonDetector:
         return skeletons
 
     # PRIVATE STATIC METHODS
+
+    # @staticmethod
+    # def __compute_global_keypoint_pose(keypoints: Dict[str, Keypoint], keypoint_name: str, other_keypoint_name: str,
+    #                                    triangle_keypoint_names: List[str]) -> Optional[np.ndarray]:
+    #     other_keypoint: Optional[Keypoint] = keypoints.get(other_keypoint_name)
+    #     if other_keypoint is None:
+    #         return None
+    #
+    #     vs: List[np.ndarray] = []
+    #     for i in range(3):
+    #         pose: Optional[np.ndarray] = keypoints.get(triangle_keypoint_names[i])
+    #         if pose is not None:
+    #             vs.append(pose[0:3, 3])
+    #
+    #     import vg
+    #     y = vg.normalize(other_keypoint_pose[0:3, 3] - )
 
     @staticmethod
     def __try_add_keypoint(keypoint_name: str, base_marker_sets: List[List[str]],
