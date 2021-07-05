@@ -2,7 +2,7 @@ import numpy as np
 
 from typing import Callable, Dict, List, Optional, Tuple
 
-from smg.skeletons import Keypoint, KeypointOrienter, Skeleton3D
+from smg.skeletons import Keypoint, KeypointOrienter, KeypointUtil, Skeleton3D
 
 from .vicon_interface import ViconInterface
 
@@ -147,16 +147,21 @@ class ViconSkeletonDetector:
                 if keypoint_from_world is not None:
                     global_keypoint_poses[keypoint_name] = np.linalg.inv(keypoint_from_world)
 
-            global_keypoint_poses["MidHip"] = KeypointOrienter(
+            midhip_orienter: Optional[KeypointOrienter] = KeypointOrienter.try_make(
                 keypoints, "MidHip", "Neck", None, ("RHip", "LHip", "Neck"),
                 self.__midhip_from_rests["MidHip"]
-            ).global_pose
-            global_keypoint_poses["Neck"] = KeypointOrienter(
+            )
+            if midhip_orienter is not None:
+                global_keypoint_poses["MidHip"] = midhip_orienter.global_pose
+
+            neck_orienter: Optional[KeypointOrienter] = KeypointOrienter.try_make(
                 keypoints, "Neck", "MidHip", "MidHip", ("LShoulder", "RShoulder", "MidHip"),
                 self.__midhip_from_rests["Neck"]
-            ).global_pose
+            )
+            if neck_orienter is not None:
+                global_keypoint_poses["Neck"] = neck_orienter.global_pose
 
-            local_keypoint_rotations: Dict[str, np.ndarray] = Skeleton3D.compute_local_keypoint_rotations(
+            local_keypoint_rotations: Dict[str, np.ndarray] = KeypointUtil.compute_local_keypoint_rotations(
                 global_keypoint_poses=global_keypoint_poses,
                 keypoint_parents=self.__keypoint_parents,
                 midhip_from_rests=self.__midhip_from_rests
