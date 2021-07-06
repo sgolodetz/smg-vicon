@@ -39,7 +39,25 @@ class ViconInterface(ABC):
         pass
 
     @abstractmethod
+    def get_segment_global_pose(self, subject_name: str, segment_name: str) -> Optional[np.ndarray]:
+        """
+        Try to get the current global 6D pose of the specified segment for the specified subject.
+
+        :param subject_name:    The name of the subject.
+        :param segment_name:    The name of the segment.
+        :return:                The current global 6D pose of the segment, if possible, or None otherwise.
+        """
+        pass
+
+    @abstractmethod
     def get_segment_local_rotation(self, subject_name: str, segment_name: str) -> Optional[np.ndarray]:
+        """
+        Try to get the current local rotation matrix of the specified segment for the specified subject.
+
+        :param subject_name:    The name of the subject.
+        :param segment_name:    The name of the segment.
+        :return:                The current local rotation matrix of the segment, if possible, or None otherwise.
+        """
         pass
 
     @abstractmethod
@@ -50,17 +68,6 @@ class ViconInterface(ABC):
         :param subject_name:    The name of the subject.
         :return:                The names of all of the segments for the specified subject, if possible, or the
                                 empty list otherwise.
-        """
-        pass
-
-    @abstractmethod
-    def get_segment_pose(self, subject_name: str, segment_name: str) -> Optional[np.ndarray]:
-        """
-        Try to get the current 6D pose of the specified segment for the specified subject.
-
-        :param subject_name:    The name of the subject.
-        :param segment_name:    The name of the segment.
-        :return:                The current 6D pose of the segment, if possible, or None otherwise.
         """
         pass
 

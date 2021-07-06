@@ -112,7 +112,43 @@ class LiveViconInterface(ViconInterface):
             print(e)
             return {}
 
+    def get_segment_global_pose(self, subject_name: str, segment_name: str) -> Optional[np.ndarray]:
+        """
+        Try to get the current global 6D pose of the specified segment for the specified subject.
+
+        :param subject_name:    The name of the subject.
+        :param segment_name:    The name of the segment.
+        :return:                The current global 6D pose of the segment, if possible, or None otherwise.
+        """
+        try:
+            world_from_camera: np.ndarray = np.eye(4)
+
+            trans, occluded = self.__client.GetSegmentGlobalTranslation(subject_name, segment_name)
+            if occluded:
+                return None
+            else:
+                world_from_camera[0:3, 3] = LiveViconInterface.__from_vicon_position(trans)
+
+            rot, occluded = self.__client.GetSegmentGlobalRotationMatrix(subject_name, segment_name)
+            if occluded:
+                return None
+            else:
+                world_from_camera[0:3, 0:3] = rot
+
+            return np.linalg.inv(world_from_camera)
+        except ViconDataStream.DataStreamException as e:
+            # If any exceptions are raised, print out what happened, but otherwise suppress them and keep running.
+            print(e)
+            return None
+
     def get_segment_local_rotation(self, subject_name: str, segment_name: str) -> Optional[np.ndarray]:
+        """
+        Try to get the current local rotation matrix of the specified segment for the specified subject.
+
+        :param subject_name:    The name of the subject.
+        :param segment_name:    The name of the segment.
+        :return:                The current local rotation matrix of the segment, if possible, or None otherwise.
+        """
         try:
             rot, occluded = self.__client.GetSegmentLocalRotationMatrix(subject_name, segment_name)
             return np.array(rot) if not occluded else None
@@ -135,35 +171,6 @@ class LiveViconInterface(ViconInterface):
             # If any exceptions are raised, print out what happened, but otherwise suppress them and keep running.
             print(e)
             return []
-
-    def get_segment_pose(self, subject_name: str, segment_name: str) -> Optional[np.ndarray]:
-        """
-        Try to get the current 6D pose of the specified segment for the specified subject.
-
-        :param subject_name:    The name of the subject.
-        :param segment_name:    The name of the segment.
-        :return:                The current 6D pose of the segment, if possible, or None otherwise.
-        """
-        try:
-            world_from_camera: np.ndarray = np.eye(4)
-
-            trans, occluded = self.__client.GetSegmentGlobalTranslation(subject_name, segment_name)
-            if occluded:
-                return None
-            else:
-                world_from_camera[0:3, 3] = LiveViconInterface.__from_vicon_position(trans)
-
-            rot, occluded = self.__client.GetSegmentGlobalRotationMatrix(subject_name, segment_name)
-            if occluded:
-                return None
-            else:
-                world_from_camera[0:3, 0:3] = rot
-
-            return np.linalg.inv(world_from_camera)
-        except ViconDataStream.DataStreamException as e:
-            # If any exceptions are raised, print out what happened, but otherwise suppress them and keep running.
-            print(e)
-            return None
 
     def get_subject_names(self) -> List[str]:
         """

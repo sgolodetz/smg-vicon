@@ -145,7 +145,7 @@ class ViconSkeletonDetector:
 
             for segment, keypoint_name in self.__segment_to_keypoint.items():
                 # TODO: Consider making get_segment_pose return w_t_c poses instead of c_t_w ones.
-                keypoint_from_world: Optional[np.ndarray] = self.__vicon.get_segment_pose(subject, segment)
+                keypoint_from_world: Optional[np.ndarray] = self.__vicon.get_segment_global_pose(subject, segment)
                 if keypoint_from_world is not None:
                     global_keypoint_poses[keypoint_name] = np.linalg.inv(keypoint_from_world)
 

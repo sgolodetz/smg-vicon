@@ -171,7 +171,25 @@ class OfflineViconInterface(ViconInterface):
         subject: Optional[OfflineViconInterface.Subject] = self.__subjects.get(subject_name)
         return subject.marker_positions if subject is not None else {}
 
+    def get_segment_global_pose(self, subject_name: str, segment_name: str) -> Optional[np.ndarray]:
+        """
+        Try to get the current global 6D pose of the specified segment for the specified subject.
+
+        :param subject_name:    The name of the subject.
+        :param segment_name:    The name of the segment.
+        :return:                The current global 6D pose of the segment, if possible, or None otherwise.
+        """
+        subject: Optional[OfflineViconInterface.Subject] = self.__subjects.get(subject_name)
+        return subject.segment_poses.get(segment_name) if subject is not None else None
+
     def get_segment_local_rotation(self, subject_name: str, segment_name: str) -> Optional[np.ndarray]:
+        """
+        Try to get the current local rotation matrix of the specified segment for the specified subject.
+
+        :param subject_name:    The name of the subject.
+        :param segment_name:    The name of the segment.
+        :return:                The current local rotation matrix of the segment, if possible, or None otherwise.
+        """
         subject: Optional[OfflineViconInterface.Subject] = self.__subjects.get(subject_name)
         return subject.segment_local_rotations.get(segment_name) if subject is not None else None
 
@@ -185,17 +203,6 @@ class OfflineViconInterface(ViconInterface):
         """
         subject: Optional[OfflineViconInterface.Subject] = self.__subjects.get(subject_name)
         return list(subject.segment_poses.keys()) if subject is not None else None
-
-    def get_segment_pose(self, subject_name: str, segment_name: str) -> Optional[np.ndarray]:
-        """
-        Try to get the current 6D pose of the specified segment for the specified subject.
-
-        :param subject_name:    The name of the subject.
-        :param segment_name:    The name of the segment.
-        :return:                The current 6D pose of the segment, if possible, or None otherwise.
-        """
-        subject: Optional[OfflineViconInterface.Subject] = self.__subjects.get(subject_name)
-        return subject.segment_poses.get(segment_name) if subject is not None else None
 
     def get_subject_names(self) -> List[str]:
         """

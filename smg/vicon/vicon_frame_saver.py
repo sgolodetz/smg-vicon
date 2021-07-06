@@ -41,7 +41,7 @@ class ViconFrameSaver:
             segment_poses: Dict[str, Optional[np.ndarray]] = {}
             segment_local_rotations: Dict[str, Optional[np.ndarray]] = {}
             for segment_name in segment_names:
-                segment_pose: Optional[np.ndarray] = self.__vicon.get_segment_pose(subject_name, segment_name)
+                segment_pose: Optional[np.ndarray] = self.__vicon.get_segment_global_pose(subject_name, segment_name)
                 if segment_pose is not None:
                     segment_pose = segment_pose.ravel()
                 segment_poses[segment_name] = segment_pose
