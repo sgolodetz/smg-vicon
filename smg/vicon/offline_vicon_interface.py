@@ -20,18 +20,19 @@ class OfflineViconInterface(ViconInterface):
 
         # CONSTRUCTOR
 
-        def __init__(self, marker_positions: Dict[str, np.ndarray], segment_poses: Dict[str, Optional[np.ndarray]],
+        def __init__(self, marker_positions: Dict[str, np.ndarray],
+                     segment_global_poses: Dict[str, Optional[np.ndarray]],
                      segment_local_rotations: Dict[str, Optional[np.ndarray]]):
             """
             Construct a Vicon subject.
 
             :param marker_positions:        The positions of the subject's markers.
-            :param segment_poses:           The 6D poses of the subject's segments (if known).
-            :param segment_local_rotations: TODO
+            :param segment_global_poses:    The global 6D poses of the subject's segments (if known).
+            :param segment_local_rotations: The local rotation matrices of the subject's segments (if known).
             """
             self.__marker_positions: Dict[str, np.ndarray] = marker_positions
+            self.__segment_global_poses: Dict[str, Optional[np.ndarray]] = segment_global_poses
             self.__segment_local_rotations: Dict[str, Optional[np.ndarray]] = segment_local_rotations
-            self.__segment_poses: Dict[str, Optional[np.ndarray]] = segment_poses
 
         # PROPERTIES
 
@@ -45,21 +46,30 @@ class OfflineViconInterface(ViconInterface):
             return self.__marker_positions
 
         @property
-        def segment_local_rotations(self) -> Dict[str, Optional[np.ndarray]]:
-            return self.__segment_local_rotations
-
-        @property
-        def segment_poses(self) -> Dict[str, Optional[np.ndarray]]:
+        def segment_global_poses(self) -> Dict[str, Optional[np.ndarray]]:
             """
-            Get the 6D poses of the subject's segments (if known).
+            Get the global 6D poses of the subject's segments (if known).
 
             .. note::
                 Some or all of these can be None if they're unknown. However, the dictionary will in any case
                 contain an entry for each segment the subject has.
 
-            :return:    The 6D poses of the subject's segments.
+            :return:    The global 6D poses of the subject's segments.
             """
-            return self.__segment_poses
+            return self.__segment_global_poses
+
+        @property
+        def segment_local_rotations(self) -> Dict[str, Optional[np.ndarray]]:
+            """
+            Get the local rotation matrices of the subject's segments (if known).
+
+            .. note::
+                Some or all of these can be None if they're unknown. However, the dictionary will in any case
+                contain an entry for each segment the subject has.
+
+            :return:    The local rotation matrices of the subject's segments.
+            """
+            return self.__segment_local_rotations
 
     # CONSTRUCTOR
 
@@ -131,15 +141,18 @@ class OfflineViconInterface(ViconInterface):
                     marker_positions: Dict[str, np.ndarray] = eval(
                         lines[i+1][len("Marker Positions: "):-1], {'array': np.array}
                     )
-                    segment_poses: Dict[str, Optional[np.ndarray]] = eval(
-                        lines[i+2][len("Segment Poses: "):-1], {'array': OfflineViconInterface.__make_pose_matrix}
+                    # FIXME: Change the string to "Segment Global Poses: ".
+                    segment_global_poses: Dict[str, Optional[np.ndarray]] = eval(
+                        lines[i+2][len("Segment Poses: "):-1],
+                        {'array': OfflineViconInterface.__make_pose_matrix}
                     )
                     segment_local_rotations: Dict[str, Optional[np.ndarray]] = eval(
-                        lines[i+3][len("Segment Local Rotations: "):-1], {'array': OfflineViconInterface.__make_rotation_matrix}
+                        lines[i+3][len("Segment Local Rotations: "):-1],
+                        {'array': OfflineViconInterface.__make_rotation_matrix}
                     )
 
                     self.__subjects[subject_name] = OfflineViconInterface.Subject(
-                        marker_positions, segment_poses, segment_local_rotations
+                        marker_positions, segment_global_poses, segment_local_rotations
                     )
 
             # Advance the frame index.
@@ -180,7 +193,7 @@ class OfflineViconInterface(ViconInterface):
         :return:                The current global 6D pose of the segment, if possible, or None otherwise.
         """
         subject: Optional[OfflineViconInterface.Subject] = self.__subjects.get(subject_name)
-        return subject.segment_poses.get(segment_name) if subject is not None else None
+        return subject.segment_global_poses.get(segment_name) if subject is not None else None
 
     def get_segment_local_rotation(self, subject_name: str, segment_name: str) -> Optional[np.ndarray]:
         """
@@ -202,7 +215,7 @@ class OfflineViconInterface(ViconInterface):
                                 empty list otherwise.
         """
         subject: Optional[OfflineViconInterface.Subject] = self.__subjects.get(subject_name)
-        return list(subject.segment_poses.keys()) if subject is not None else None
+        return list(subject.segment_global_poses.keys()) if subject is not None else None
 
     def get_subject_names(self) -> List[str]:
         """
