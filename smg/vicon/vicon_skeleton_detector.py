@@ -74,6 +74,8 @@ class ViconSkeletonDetector:
 
         self.__midhip_from_rests: Dict[str, np.ndarray] = {
             "LElbow": lm,  # FIXME
+            "LHip": np.eye(3),
+            "LKnee": np.eye(3),
             "LShoulder": lm,  # FIXME
             "MidHip": np.eye(3),
             "Neck": np.array([[-1, 0, 0], [0, -1, 0], [0, 0, 1]]),
