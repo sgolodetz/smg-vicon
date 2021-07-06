@@ -85,7 +85,7 @@ class ViconSkeletonDetector:
             "RShoulder": rm  # FIXME
         }
 
-        self.__keypoint_parents: Dict[str, str] = {
+        self.__parent_keypoints: Dict[str, str] = {
             "LElbow": "LShoulder",
             "LHip": "MidHip",
             "LKnee": "LHip",
@@ -165,8 +165,8 @@ class ViconSkeletonDetector:
 
             local_keypoint_rotations: Dict[str, np.ndarray] = KeypointUtil.compute_local_keypoint_rotations(
                 global_keypoint_poses=global_keypoint_poses,
-                keypoint_parents=self.__keypoint_parents,
-                midhip_from_rests=self.__midhip_from_rests
+                midhip_from_rests=self.__midhip_from_rests,
+                parent_keypoints=self.__parent_keypoints
             )
 
             # Add the skeleton to the list.
