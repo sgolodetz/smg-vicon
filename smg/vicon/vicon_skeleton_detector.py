@@ -150,15 +150,13 @@ class ViconSkeletonDetector:
                     global_keypoint_poses[keypoint_name] = np.linalg.inv(keypoint_from_world)
 
             midhip_orienter: Optional[KeypointOrienter] = KeypointOrienter.try_make(
-                keypoints, "MidHip", "Neck", None, ("RHip", "LHip", "Neck"),
-                self.__midhip_from_rests["MidHip"]
+                keypoints, "MidHip", "Neck", ("RHip", "LHip", "Neck")
             )
             if midhip_orienter is not None:
                 global_keypoint_poses["MidHip"] = midhip_orienter.global_pose
 
             neck_orienter: Optional[KeypointOrienter] = KeypointOrienter.try_make(
-                keypoints, "Neck", "MidHip", "MidHip", ("LShoulder", "RShoulder", "MidHip"),
-                self.__midhip_from_rests["Neck"]
+                keypoints, "Neck", "MidHip", ("LShoulder", "RShoulder", "MidHip")
             )
             if neck_orienter is not None:
                 global_keypoint_poses["Neck"] = neck_orienter.global_pose
