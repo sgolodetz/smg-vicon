@@ -12,15 +12,17 @@ class ViconSkeletonDetector:
 
     # CONSTRUCTOR
 
-    def __init__(self, vicon: ViconInterface, *, is_person: Callable[[str], bool]):
+    def __init__(self, vicon: ViconInterface, *, is_person: Callable[[str], bool], use_vicon_poses: bool = False):
         """
         Construct a 3D skeleton detector based on a Vicon system.
 
-        :param vicon:       The Vicon interface.
-        :param is_person:   A function that determines whether or not the specified subject is a person.
+        :param vicon:           The Vicon interface.
+        :param is_person:       A function that determines whether or not the specified subject is a person.
+        :param use_vicon_poses: Whether to use the joint poses produced by the Vicon system.
         """
         self.__vicon: ViconInterface = vicon
         self.__is_person: Callable[[str], bool] = is_person
+        self.__use_vicon_poses: bool = use_vicon_poses
 
         # Specify which keypoints are joined to form bones.
         self.__keypoint_pairs: List[Tuple[str, str]] = [
@@ -122,14 +124,16 @@ class ViconSkeletonDetector:
             # Otherwise, get its marker positions.
             marker_positions: Dict[str, np.ndarray] = self.__vicon.get_marker_positions(subject)
 
-            # Construct the keypoints for a skeleton based on the available marker positions.
+            # Construct the keypoints for the skeleton based on the available marker positions.
             keypoints: Dict[str, Keypoint] = {}
 
-            for marker_name, keypoint_name in self.__marker_to_keypoint.items():
+            # First add the keypoints whose positions can be derived from a single marker.
+            for marker_name, keypoint in self.__marker_to_keypoint.items():
                 marker_position: Optional[np.ndarray] = marker_positions.get(marker_name)
                 if marker_position is not None:
-                    keypoints[keypoint_name] = Keypoint(keypoint_name, marker_position)
+                    keypoints[keypoint] = Keypoint(keypoint, marker_position)
 
+            # Then add the keypoints that are a blend of multiple markers.
             ViconSkeletonDetector.__try_add_keypoint(
                 "Head", [["LBHD", "LFHD", "RBHD", "RFHD"]], keypoints, marker_positions
             )
@@ -147,37 +151,46 @@ class ViconSkeletonDetector:
                 "RWrist", [["RWRA", "RWRB"], ["RWRA"], ["RWRB"], ["RFIN"]], keypoints, marker_positions
             )
 
-            global_keypoint_poses: Dict[str, np.ndarray] = {}
+            # If we're using the joint poses from the Vicon system:
+            if self.__use_vicon_poses:
+                global_keypoint_poses: Dict[str, np.ndarray] = {}
 
-            for segment, keypoint_name in self.__segment_to_keypoint.items():
-                # TODO: Consider making get_segment_pose return w_t_c poses instead of c_t_w ones.
-                keypoint_from_world: Optional[np.ndarray] = self.__vicon.get_segment_global_pose(subject, segment)
-                if keypoint_from_world is not None:
-                    global_keypoint_poses[keypoint_name] = np.linalg.inv(keypoint_from_world)
+                # Look up the poses of those keypoints that have a corresponding Vicon segment.
+                for segment, keypoint in self.__segment_to_keypoint.items():
+                    # TODO: Consider making get_segment_global_pose return w_t_c poses instead of c_t_w ones.
+                    keypoint_from_world: Optional[np.ndarray] = self.__vicon.get_segment_global_pose(subject, segment)
+                    if keypoint_from_world is not None:
+                        global_keypoint_poses[keypoint] = np.linalg.inv(keypoint_from_world)
 
-            midhip_orienter: Optional[KeypointOrienter] = KeypointOrienter.try_make(
-                keypoints, "MidHip", "Neck", ("RHip", "LHip", "Neck")
-            )
-            if midhip_orienter is not None:
-                global_keypoint_poses["MidHip"] = midhip_orienter.global_pose
+                # Compute the poses for the other relevant keypoints that don't have a corresponding Vicon segment.
+                midhip_orienter: Optional[KeypointOrienter] = KeypointOrienter.try_make(
+                    keypoints, "MidHip", "Neck", ("RHip", "LHip", "Neck")
+                )
+                if midhip_orienter is not None:
+                    global_keypoint_poses["MidHip"] = midhip_orienter.global_pose
 
-            neck_orienter: Optional[KeypointOrienter] = KeypointOrienter.try_make(
-                keypoints, "Neck", "MidHip", ("LShoulder", "RShoulder", "MidHip")
-            )
-            if neck_orienter is not None:
-                global_keypoint_poses["Neck"] = neck_orienter.global_pose
+                neck_orienter: Optional[KeypointOrienter] = KeypointOrienter.try_make(
+                    keypoints, "Neck", "MidHip", ("LShoulder", "RShoulder", "MidHip")
+                )
+                if neck_orienter is not None:
+                    global_keypoint_poses["Neck"] = neck_orienter.global_pose
 
-            local_keypoint_rotations: Dict[str, np.ndarray] = KeypointUtil.compute_local_keypoint_rotations(
-                global_keypoint_poses=global_keypoint_poses,
-                midhip_from_rests=self.__midhip_from_rests,
-                parent_keypoints=self.__parent_keypoints
-            )
+                # Compute local rotations for the relevant keypoints based on the global poses.
+                local_keypoint_rotations: Dict[str, np.ndarray] = KeypointUtil.compute_local_keypoint_rotations(
+                    global_keypoint_poses=global_keypoint_poses,
+                    midhip_from_rests=self.__midhip_from_rests,
+                    parent_keypoints=self.__parent_keypoints
+                )
 
-            # Add the skeleton to the list.
-            # skeletons.append(Skeleton3D(keypoints, self.__keypoint_pairs))
-            skeletons.append(Skeleton3D(
-                keypoints, self.__keypoint_pairs, global_keypoint_poses, local_keypoint_rotations
-            ))
+                # Add the skeleton to the list.
+                skeletons.append(Skeleton3D(
+                    keypoints, self.__keypoint_pairs, global_keypoint_poses, local_keypoint_rotations
+                ))
+
+            # Otherwise, if we're computing our own joint poses:
+            else:
+                # Simply add the skeleton to the list, and let the joint poses be computed internally.
+                skeletons.append(Skeleton3D(keypoints, self.__keypoint_pairs))
 
         return skeletons
 
