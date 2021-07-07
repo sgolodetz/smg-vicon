@@ -112,28 +112,13 @@ class LiveViconInterface(ViconInterface):
             print(e)
             return {}
 
-    def get_segment_names(self, subject_name: str) -> List[str]:
+    def get_segment_global_pose(self, subject_name: str, segment_name: str) -> Optional[np.ndarray]:
         """
-        Try to get the names of all of the segments for the specified subject.
-
-        :param subject_name:    The name of the subject.
-        :return:                The names of all of the segments for the specified subject, if possible, or the
-                                empty list otherwise.
-        """
-        try:
-            return self.__client.GetSegmentNames(subject_name)
-        except ViconDataStream.DataStreamException as e:
-            # If any exceptions are raised, print out what happened, but otherwise suppress them and keep running.
-            print(e)
-            return []
-
-    def get_segment_pose(self, subject_name: str, segment_name) -> Optional[np.ndarray]:
-        """
-        Try to get the current 6D pose of the specified segment for the specified subject.
+        Try to get the current global 6D pose of the specified segment for the specified subject.
 
         :param subject_name:    The name of the subject.
         :param segment_name:    The name of the segment.
-        :return:                The current 6D pose of the segment, if possible, or None otherwise.
+        :return:                The current global 6D pose of the segment, if possible, or None otherwise.
         """
         try:
             world_from_camera: np.ndarray = np.eye(4)
@@ -155,6 +140,37 @@ class LiveViconInterface(ViconInterface):
             # If any exceptions are raised, print out what happened, but otherwise suppress them and keep running.
             print(e)
             return None
+
+    def get_segment_local_rotation(self, subject_name: str, segment_name: str) -> Optional[np.ndarray]:
+        """
+        Try to get the current local rotation matrix of the specified segment for the specified subject.
+
+        :param subject_name:    The name of the subject.
+        :param segment_name:    The name of the segment.
+        :return:                The current local rotation matrix of the segment, if possible, or None otherwise.
+        """
+        try:
+            rot, occluded = self.__client.GetSegmentLocalRotationMatrix(subject_name, segment_name)
+            return np.array(rot) if not occluded else None
+        except ViconDataStream.DataStreamException as e:
+            # If any exceptions are raised, print out what happened, but otherwise suppress them and keep running.
+            print(e)
+            return None
+
+    def get_segment_names(self, subject_name: str) -> List[str]:
+        """
+        Try to get the names of all of the segments for the specified subject.
+
+        :param subject_name:    The name of the subject.
+        :return:                The names of all of the segments for the specified subject, if possible, or the
+                                empty list otherwise.
+        """
+        try:
+            return self.__client.GetSegmentNames(subject_name)
+        except ViconDataStream.DataStreamException as e:
+            # If any exceptions are raised, print out what happened, but otherwise suppress them and keep running.
+            print(e)
+            return []
 
     def get_subject_names(self) -> List[str]:
         """
