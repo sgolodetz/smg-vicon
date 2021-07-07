@@ -127,28 +127,28 @@ class ViconSkeletonDetector:
             # Construct the keypoints for the skeleton based on the available marker positions.
             keypoints: Dict[str, Keypoint] = {}
 
-            # First add the keypoints whose positions can be derived from a single marker.
+            # First add keypoints whose positions can be derived from a single marker.
             for marker_name, keypoint in self.__marker_to_keypoint.items():
                 marker_position: Optional[np.ndarray] = marker_positions.get(marker_name)
                 if marker_position is not None:
                     keypoints[keypoint] = Keypoint(keypoint, marker_position)
 
-            # Then add the keypoints that are a blend of multiple markers.
+            # Then add keypoints whose positions are the result of averaging the positions of several Vicon markers.
             ViconSkeletonDetector.__try_add_keypoint(
-                "Head", [["LBHD", "LFHD", "RBHD", "RFHD"]], keypoints, marker_positions
+                "Head", [["LBHD", "LFHD", "RBHD", "RFHD"]], marker_positions, keypoints
             )
-            ViconSkeletonDetector.__try_add_keypoint("LHip", [["LASI", "LPSI"]], keypoints, marker_positions)
+            ViconSkeletonDetector.__try_add_keypoint("LHip", [["LASI", "LPSI"]], marker_positions, keypoints)
             ViconSkeletonDetector.__try_add_keypoint(
-                "LWrist", [["LWRA", "LWRB"], ["LWRA"], ["LWRB"], ["LFIN"]], keypoints, marker_positions
+                "LWrist", [["LWRA", "LWRB"], ["LWRA"], ["LWRB"], ["LFIN"]], marker_positions, keypoints
             )
             ViconSkeletonDetector.__try_add_keypoint(
                 "MidHip", [["LASI", "LPSI", "RASI", "RPSI"], ["LASI", "RPSI"], ["RASI", "LPSI"]],
-                keypoints, marker_positions
+                marker_positions, keypoints
             )
-            ViconSkeletonDetector.__try_add_keypoint("Neck", [["LSHO", "RSHO"]], keypoints, marker_positions)
-            ViconSkeletonDetector.__try_add_keypoint("RHip", [["RASI", "RPSI"]], keypoints, marker_positions)
+            ViconSkeletonDetector.__try_add_keypoint("Neck", [["LSHO", "RSHO"]], marker_positions, keypoints)
+            ViconSkeletonDetector.__try_add_keypoint("RHip", [["RASI", "RPSI"]], marker_positions, keypoints)
             ViconSkeletonDetector.__try_add_keypoint(
-                "RWrist", [["RWRA", "RWRB"], ["RWRA"], ["RWRB"], ["RFIN"]], keypoints, marker_positions
+                "RWrist", [["RWRA", "RWRB"], ["RWRA"], ["RWRB"], ["RFIN"]], marker_positions, keypoints
             )
 
             # If we're using the joint poses from the Vicon system:
@@ -198,9 +198,24 @@ class ViconSkeletonDetector:
 
     @staticmethod
     def __try_add_keypoint(keypoint_name: str, base_marker_sets: List[List[str]],
-                           keypoints: Dict[str, Keypoint], marker_positions: Dict[str, np.ndarray]) -> None:
+                           marker_positions: Dict[str, np.ndarray],
+                           keypoints: Dict[str, Keypoint]) -> None:
+        """
+        Try to add a keypoint whose position is the result of averaging the positions of several Vicon markers.
+
+        :param keypoint_name:       The name of the keypoint to try to add.
+        :param base_marker_sets:    A list containing different sets of markers whose positions can be averaged to
+                                    compute the position of the keypoint (these will be tried in order).
+        :param marker_positions:    The positions of the Vicon markers that have been detected.
+        :param keypoints:           The list of keypoints for the skeletion (any new keypoint will be added to this).
+        """
+        # For each possible set of base markers:
         for base_marker_set in base_marker_sets:
+            # Try to get the markers' positions.
             base_marker_positions: List[Optional[np.ndarray]] = [marker_positions.get(m) for m in base_marker_set]
+
+            # If all of them are available:
             if all([p is not None for p in base_marker_positions]):
+                # Average them to get the position of the keypoint, then add the keypoint to the list and return.
                 keypoints[keypoint_name] = Keypoint(keypoint_name, np.mean(base_marker_positions, axis=0))
                 return
