@@ -22,6 +22,7 @@ class ViconSkeletonDetector:
         self.__vicon: ViconInterface = vicon
         self.__is_person: Callable[[str], bool] = is_person
 
+        # Specify which keypoints are joined to form bones.
         self.__keypoint_pairs: List[Tuple[str, str]] = [
             ("Head", "Neck"),
             ("LAnkle", "LKnee"),
@@ -39,8 +40,9 @@ class ViconSkeletonDetector:
             ("RHip", "RKnee")
         ]
 
-        # Note: These markers directly correspond to useful keypoints, whereas some other keypoints (e.g. MidHip)
-        #       have to be computed based on the positions of multiple markers (see the detect_skeletons function).
+        # A mapping from Vicon marker names to keypoints. Note that whilst these markers directly correspond to
+        # useful keypoints, some other keypoints (e.g. MidHip) have to be computed based on the positions of
+        # multiple markers (see the detect_skeletons function).
         self.__marker_to_keypoint: Dict[str, str] = {
             "LANK": "LAnkle",
             "LELB": "LElbow",
@@ -58,33 +60,25 @@ class ViconSkeletonDetector:
             "RTOE": "RToe"
         }
 
-        self.__segment_to_keypoint: Dict[str, str] = {
-            "L_Elbow": "LElbow",
-            "R_Elbow": "RElbow",
-            "L_Femur": "LHip",
-            "R_Femur": "RHip",
-            "L_Humerus": "LShoulder",
-            "R_Humerus": "RShoulder",
-            "L_Tibia": "LKnee",
-            "R_Tibia": "RKnee"
-        }
-
-        rm = np.array([[0, -1, 0], [1, 0, 0], [0, 0, 1]])
-        lm = np.array([[0, 1, 0], [-1, 0, 0], [0, 0, 1]])
+        # A mapping specifying the midhip-from-rest transforms for the keypoints.
+        # FIXME: These need to be properly checked next time I have access to the Vicon system.
+        lm: np.ndarray = np.array([[0, 1, 0], [-1, 0, 0], [0, 0, 1]])
+        rm: np.ndarray = np.array([[0, -1, 0], [1, 0, 0], [0, 0, 1]])
 
         self.__midhip_from_rests: Dict[str, np.ndarray] = {
-            "LElbow": lm,  # FIXME
+            "LElbow": lm,
             "LHip": np.eye(3),
             "LKnee": np.eye(3),
-            "LShoulder": lm,  # FIXME
+            "LShoulder": lm,
             "MidHip": np.eye(3),
             "Neck": np.array([[-1, 0, 0], [0, -1, 0], [0, 0, 1]]),
-            "RElbow": rm,  # FIXME
-            "RHip": np.eye(3),  # FIXME,
-            "RKnee": np.eye(3),  # FIXME
-            "RShoulder": rm  # FIXME
+            "RElbow": rm,
+            "RHip": np.eye(3),
+            "RKnee": np.eye(3),
+            "RShoulder": rm
         }
 
+        # A mapping specifying the child to parent relationships between the keypoints.
         self.__parent_keypoints: Dict[str, str] = {
             "LElbow": "LShoulder",
             "LHip": "MidHip",
@@ -95,6 +89,18 @@ class ViconSkeletonDetector:
             "RHip": "MidHip",
             "RKnee": "RHip",
             "RShoulder": "Neck"
+        }
+
+        # A mapping from Vicon segment names to the keypoints that control the poses of the corresponding bones.
+        self.__segment_to_keypoint: Dict[str, str] = {
+            "L_Elbow": "LElbow",
+            "R_Elbow": "RElbow",
+            "L_Femur": "LHip",
+            "R_Femur": "RHip",
+            "L_Humerus": "LShoulder",
+            "R_Humerus": "RShoulder",
+            "L_Tibia": "LKnee",
+            "R_Tibia": "RKnee"
         }
 
     # PUBLIC METHODS
