@@ -40,6 +40,7 @@ class ViconFrameSaver:
             segment_names: List[str] = self.__vicon.get_segment_names(subject_name)
             segment_global_poses: Dict[str, Optional[np.ndarray]] = {}
             segment_local_rotations: Dict[str, Optional[np.ndarray]] = {}
+
             for segment_name in segment_names:
                 segment_global_pose: Optional[np.ndarray] = self.__vicon.get_segment_global_pose(
                     subject_name, segment_name

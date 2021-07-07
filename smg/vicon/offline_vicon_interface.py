@@ -245,4 +245,10 @@ class OfflineViconInterface(ViconInterface):
 
     @staticmethod
     def __make_rotation_matrix(flat_rot: List[float]) -> np.ndarray:
+        """
+        Convert a flat array ot 9 floats in row-major order into a 3*3 rotation matrix.
+
+        :param flat_rot:    A flat array of 9 floats in row-major order.
+        :return:            The corresponding 3*3 rotation matrix.
+        """
         return np.array(flat_rot).reshape(3, 3)
