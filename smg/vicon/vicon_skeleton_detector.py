@@ -107,13 +107,13 @@ class ViconSkeletonDetector:
 
     # PUBLIC METHODS
 
-    def detect_skeletons(self) -> List[Skeleton3D]:
+    def detect_skeletons(self) -> Dict[str, Skeleton3D]:
         """
         Detect 3D skeletons in the scene using the Vicon system.
 
         :return:    The detected 3D skeletons.
         """
-        skeletons: List[Skeleton3D] = []
+        skeletons: Dict[str, Skeleton3D] = {}
 
         # For each relevant Vicon subject:
         for subject in self.__vicon.get_subject_names():
@@ -182,15 +182,15 @@ class ViconSkeletonDetector:
                     parent_keypoints=self.__parent_keypoints
                 )
 
-                # Add the skeleton to the list.
-                skeletons.append(Skeleton3D(
+                # Add the skeleton to the dictionary.
+                skeletons[subject] = Skeleton3D(
                     keypoints, self.__keypoint_pairs, global_keypoint_poses, local_keypoint_rotations
-                ))
+                )
 
             # Otherwise, if we're computing our own joint poses:
             else:
-                # Simply add the skeleton to the list, and let the joint poses be computed internally.
-                skeletons.append(Skeleton3D(keypoints, self.__keypoint_pairs))
+                # Simply add the skeleton to the dictionary, and let the joint poses be computed internally.
+                skeletons[subject] = Skeleton3D(keypoints, self.__keypoint_pairs)
 
         return skeletons
 

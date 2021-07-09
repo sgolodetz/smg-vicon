@@ -81,8 +81,10 @@ class OfflineViconInterface(ViconInterface):
         """
         self.__folder: str = folder
 
-        # The names of the files in the folder on disk that contain saved Vicon frame data.
-        self.__frame_filenames: List[str] = sorted(os.listdir(self.__folder))
+        # The names of the files in the folder on disk that contain saved Vicon frame data, in frame number order.
+        self.__frame_filenames: List[str] = sorted(
+            os.listdir(self.__folder), key=OfflineViconInterface.__get_frame_number
+        )
 
         # The number originally assigned to the current frame by the live Vicon system.
         self.__frame_number: Optional[int] = None
@@ -232,6 +234,20 @@ class OfflineViconInterface(ViconInterface):
         pass
 
     # PRIVATE STATIC METHODS
+
+    @staticmethod
+    def __get_frame_number(filename: str) -> int:
+        """
+        Get the frame number corresponding to a file containing Vicon frame data.
+
+        .. note::
+            The files are named <frame number>.txt, so we can get the frame numbers directly from the file names.
+
+        :param filename:    The name of a file containing Vicon frame data.
+        :return:            The corresponding frame number.
+        """
+        frame_number, _ = filename.split(".")
+        return int(frame_number)
 
     @staticmethod
     def __make_pose_matrix(flat_pose: List[float]) -> np.ndarray:
