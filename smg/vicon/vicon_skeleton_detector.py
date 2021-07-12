@@ -12,7 +12,8 @@ class ViconSkeletonDetector:
 
     # CONSTRUCTOR
 
-    def __init__(self, vicon: ViconInterface, *, is_person: Callable[[str], bool], use_vicon_poses: bool = False):
+    def __init__(self, vicon: ViconInterface, *, is_person: Callable[[str, ViconInterface], bool],
+                 use_vicon_poses: bool = False):
         """
         Construct a 3D skeleton detector based on a Vicon system.
 
@@ -21,7 +22,7 @@ class ViconSkeletonDetector:
         :param use_vicon_poses: Whether to use the joint poses produced by the Vicon system.
         """
         self.__vicon: ViconInterface = vicon
-        self.__is_person: Callable[[str], bool] = is_person
+        self.__is_person: Callable[[str, ViconInterface], bool] = is_person
         self.__use_vicon_poses: bool = use_vicon_poses
 
         # Specify which keypoints are joined to form bones.
@@ -118,7 +119,7 @@ class ViconSkeletonDetector:
         # For each relevant Vicon subject:
         for subject in self.__vicon.get_subject_names():
             # If the subject is not a person, skip it.
-            if not self.__is_person(subject):
+            if not self.__is_person(subject, self.__vicon):
                 continue
 
             # Otherwise, get its marker positions.
