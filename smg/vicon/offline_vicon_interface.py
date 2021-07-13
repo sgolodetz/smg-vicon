@@ -81,8 +81,10 @@ class OfflineViconInterface(ViconInterface):
         """
         self.__folder: str = folder
 
-        # The names of the files in the folder on disk that contain saved Vicon frame data.
-        self.__frame_filenames: List[str] = sorted(os.listdir(self.__folder))
+        # The names of the files in the folder on disk that contain saved Vicon frame data, in frame number order.
+        self.__frame_filenames: List[str] = sorted(
+            os.listdir(self.__folder), key=OfflineViconInterface.__get_frame_number
+        )
 
         # The number originally assigned to the current frame by the live Vicon system.
         self.__frame_number: Optional[int] = None
@@ -135,21 +137,31 @@ class OfflineViconInterface(ViconInterface):
             with open(os.path.join(self.__folder, frame_filename)) as f:
                 lines: List[str] = f.readlines()
 
-                # Note: The file consists of four content lines and one blank line per subject, hence the "5" here.
+                # Note: The new version of the file format uses four content lines and one blank line per subject,
+                #       hence the "5" here. There's also an older version of the file format that didn't save the
+                #       local rotations and so has one fewer content line per subject - we handle that below.
                 for i in range(0, len(lines), 5):
-                    subject_name: str = lines[i][len("Subject: "):-1]
+                    subject_name: str = OfflineViconInterface.__get_line_contents(lines[i])
                     marker_positions: Dict[str, np.ndarray] = eval(
-                        lines[i+1][len("Marker Positions: "):-1], {'array': np.array}
+                        OfflineViconInterface.__get_line_contents(lines[i+1]), {'array': np.array}
                     )
-                    # FIXME: Change the string to "Segment Global Poses: ".
                     segment_global_poses: Dict[str, Optional[np.ndarray]] = eval(
-                        lines[i+2][len("Segment Poses: "):-1],
+                        OfflineViconInterface.__get_line_contents(lines[i+2]),
                         {'array': OfflineViconInterface.__make_pose_matrix}
                     )
-                    segment_local_rotations: Dict[str, Optional[np.ndarray]] = eval(
-                        lines[i+3][len("Segment Local Rotations: "):-1],
-                        {'array': OfflineViconInterface.__make_rotation_matrix}
-                    )
+
+                    # If the file contains four content lines for this subject, read in its local rotations.
+                    if lines[i+3] != "\n":
+                        segment_local_rotations: Dict[str, Optional[np.ndarray]] = eval(
+                            OfflineViconInterface.__get_line_contents(lines[i+3]),
+                            {'array': OfflineViconInterface.__make_rotation_matrix}
+                        )
+
+                    # Otherwise, use an empty map of local rotations, and decrement the line counter to compensate
+                    # for the fact that this subject only has three content lines. Yes, this is a nasty hack :)
+                    else:
+                        segment_local_rotations: Dict[str, Optional[np.ndarray]] = {}
+                        i -= 1
 
                     self.__subjects[subject_name] = OfflineViconInterface.Subject(
                         marker_positions, segment_global_poses, segment_local_rotations
@@ -232,6 +244,40 @@ class OfflineViconInterface(ViconInterface):
         pass
 
     # PRIVATE STATIC METHODS
+
+    @staticmethod
+    def __get_frame_number(filename: str) -> int:
+        """
+        Get the frame number corresponding to a file containing Vicon frame data.
+
+        .. note::
+            The files are named <frame number>.txt, so we can get the frame numbers directly from the file names.
+
+        :param filename:    The name of a file containing Vicon frame data.
+        :return:            The corresponding frame number.
+        """
+        frame_number, _ = filename.split(".")
+        return int(frame_number)
+
+    @staticmethod
+    def __get_line_contents(line: str) -> str:
+        """
+        Get the contents part of a line in one of the files that contains Vicon frame data.
+
+        .. note::
+            The files contain multiple lines of the form "specifier: contents\n". This function simply gets the
+            contents part of such a line.
+        .. note::
+            The contents parts of some of the lines themselves contain ": ", which is why we need to specify a
+            maxsplit of 1 here.
+        .. note::
+            The line passed in ends with a "\n", which we strip from the end of the contents before returning.
+
+        :param line:    The line whose contents part we want to get.
+        :return:        The contents part of the line.
+        """
+        _, contents = line.split(": ", maxsplit=1)
+        return contents[:-1]
 
     @staticmethod
     def __make_pose_matrix(flat_pose: List[float]) -> np.ndarray:

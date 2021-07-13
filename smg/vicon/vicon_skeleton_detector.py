@@ -1,4 +1,6 @@
 import numpy as np
+import numpy as np
+import vg
 
 from typing import Callable, Dict, List, Optional, Tuple
 
@@ -12,7 +14,8 @@ class ViconSkeletonDetector:
 
     # CONSTRUCTOR
 
-    def __init__(self, vicon: ViconInterface, *, is_person: Callable[[str], bool], use_vicon_poses: bool = False):
+    def __init__(self, vicon: ViconInterface, *, is_person: Callable[[str, ViconInterface], bool],
+                 use_vicon_poses: bool = False):
         """
         Construct a 3D skeleton detector based on a Vicon system.
 
@@ -21,13 +24,14 @@ class ViconSkeletonDetector:
         :param use_vicon_poses: Whether to use the joint poses produced by the Vicon system.
         """
         self.__vicon: ViconInterface = vicon
-        self.__is_person: Callable[[str], bool] = is_person
+        self.__is_person: Callable[[str, ViconInterface], bool] = is_person
         self.__use_vicon_poses: bool = use_vicon_poses
 
         # Specify which keypoints are joined to form bones.
         self.__keypoint_pairs: List[Tuple[str, str]] = [
             ("Head", "Neck"),
             ("LAnkle", "LKnee"),
+            ("LAnkle", "LToe"),
             ("LElbow", "LShoulder"),
             ("LElbow", "LWrist"),
             ("LHip", "MidHip"),
@@ -37,6 +41,7 @@ class ViconSkeletonDetector:
             ("MidHip", "RHip"),
             ("Neck", "RShoulder"),
             ("RAnkle", "RKnee"),
+            ("RAnkle", "RToe"),
             ("RElbow", "RShoulder"),
             ("RElbow", "RWrist"),
             ("RHip", "RKnee")
@@ -50,15 +55,11 @@ class ViconSkeletonDetector:
             "LELB": "LElbow",
             "LKNE": "LKnee",
             "LSHO": "LShoulder",
-            "LTHI": "LThigh",
-            "LTIB": "LTibula",
             "LTOE": "LToe",
             "RANK": "RAnkle",
             "RELB": "RElbow",
             "RKNE": "RKnee",
             "RSHO": "RShoulder",
-            "RTHI": "RThigh",
-            "RTIB": "RTibula",
             "RTOE": "RToe"
         }
 
@@ -107,22 +108,25 @@ class ViconSkeletonDetector:
 
     # PUBLIC METHODS
 
-    def detect_skeletons(self) -> List[Skeleton3D]:
+    def detect_skeletons(self) -> Dict[str, Skeleton3D]:
         """
         Detect 3D skeletons in the scene using the Vicon system.
 
         :return:    The detected 3D skeletons.
         """
-        skeletons: List[Skeleton3D] = []
+        skeletons: Dict[str, Skeleton3D] = {}
 
         # For each relevant Vicon subject:
         for subject in self.__vicon.get_subject_names():
             # If the subject is not a person, skip it.
-            if not self.__is_person(subject):
+            if not self.__is_person(subject, self.__vicon):
                 continue
 
             # Otherwise, get its marker positions.
             marker_positions: Dict[str, np.ndarray] = self.__vicon.get_marker_positions(subject)
+
+            # Try to hallucinate some of the missing markers (where feasible).
+            ViconSkeletonDetector.__try_hallucinate_missing_markers(marker_positions)
 
             # Construct the keypoints for the skeleton based on the available marker positions.
             keypoints: Dict[str, Keypoint] = {}
@@ -182,15 +186,15 @@ class ViconSkeletonDetector:
                     parent_keypoints=self.__parent_keypoints
                 )
 
-                # Add the skeleton to the list.
-                skeletons.append(Skeleton3D(
+                # Add the skeleton to the dictionary.
+                skeletons[subject] = Skeleton3D(
                     keypoints, self.__keypoint_pairs, global_keypoint_poses, local_keypoint_rotations
-                ))
+                )
 
             # Otherwise, if we're computing our own joint poses:
             else:
-                # Simply add the skeleton to the list, and let the joint poses be computed internally.
-                skeletons.append(Skeleton3D(keypoints, self.__keypoint_pairs))
+                # Simply add the skeleton to the dictionary, and let the joint poses be computed internally.
+                skeletons[subject] = Skeleton3D(keypoints, self.__keypoint_pairs)
 
         return skeletons
 
@@ -219,3 +223,53 @@ class ViconSkeletonDetector:
                 # Average them to get the position of the keypoint, then add the keypoint to the list and return.
                 keypoints[keypoint_name] = Keypoint(keypoint_name, np.mean(base_marker_positions, axis=0))
                 return
+
+    @staticmethod
+    def __try_hallucinate_missing_markers(marker_positions: Dict[str, np.ndarray]) -> None:
+        """
+        Try to hallucinate some of the missing markers.
+
+        :param marker_positions:    The positions of the markers detected by the Vicon system.
+        """
+        ViconSkeletonDetector.__try_hallucinate_trapezium_marker("LASI", marker_positions, "LPSI", "RPSI", "RASI")
+        ViconSkeletonDetector.__try_hallucinate_trapezium_marker("LPSI", marker_positions, "LASI", "RASI", "RPSI")
+        ViconSkeletonDetector.__try_hallucinate_trapezium_marker("RASI", marker_positions, "RPSI", "LPSI", "LASI")
+        ViconSkeletonDetector.__try_hallucinate_trapezium_marker("RPSI", marker_positions, "RASI", "LASI", "LPSI")
+
+    @staticmethod
+    def __try_hallucinate_trapezium_marker(target_name: str, marker_positions: Dict[str, np.ndarray],
+                                           origin_name: str, base_name: str, diagonal_name: str) -> None:
+        """
+        Try to hallucinate a missing marker using a trapezium approach.
+
+        .. note::
+            The approach assumes that the missing marker is part of a planar trapezium of markers, and that the
+            positions of the other three markers in the trapezium are known. This is particularly relevant to
+            the Vicon skeleton, which has configurations of four markers around the waist and the head that are
+            both roughly planar trapeziums.
+        .. note::
+            The configuration of markers is (cue ASCII art):
+
+                origin -- base
+                 /         \
+              target -- diagonal
+
+        :param target_name:         The name of the target marker (the one we're trying to hallucinate).
+        :param marker_positions:    The positions of all detected (or previously hallucinated) markers.
+        :param origin_name:         The name of the origin marker.
+        :param base_name:           The name of the base marker.
+        :param diagonal_name:       The name of the diagonal marker.
+        """
+        origin_pos: Optional[np.ndarray] = marker_positions.get(origin_name)
+        base_pos: Optional[np.ndarray] = marker_positions.get(base_name)
+        diagonal_pos: Optional[np.ndarray] = marker_positions.get(diagonal_name)
+
+        # If the positions of the origin, base and diagonal markers are all known, but that of the target isn't:
+        if all([p is not None for p in [origin_pos, base_pos, diagonal_pos]]) \
+                and marker_positions.get(target_name) is None:
+            # Calculate a position for the target and add it to the map.
+            a: np.ndarray = diagonal_pos - origin_pos
+            b: np.ndarray = base_pos - origin_pos
+            a_par: np.ndarray = vg.project(a, b)
+            a_perp: np.ndarray = a - a_par
+            marker_positions[target_name] = origin_pos + b + a_perp - a_par

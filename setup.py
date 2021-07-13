@@ -17,7 +17,8 @@ setup(
     install_requires=[
         "numpy",
         "smg-skeletons",
-        "smg-utility"
+        "smg-utility",
+        "vg"
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
