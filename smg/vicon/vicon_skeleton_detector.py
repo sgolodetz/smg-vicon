@@ -1,5 +1,4 @@
 import numpy as np
-import numpy as np
 import vg
 
 from typing import Callable, Dict, List, Optional, Tuple
