@@ -1,4 +1,5 @@
 import numpy as np
+import numpy as np
 import vg
 
 from typing import Callable, Dict, List, Optional, Tuple
@@ -54,15 +55,11 @@ class ViconSkeletonDetector:
             "LELB": "LElbow",
             "LKNE": "LKnee",
             "LSHO": "LShoulder",
-            # "LTHI": "LThigh",
-            # "LTIB": "LTibula",
             "LTOE": "LToe",
             "RANK": "RAnkle",
             "RELB": "RElbow",
             "RKNE": "RKnee",
             "RSHO": "RShoulder",
-            # "RTHI": "RThigh",
-            # "RTIB": "RTibula",
             "RTOE": "RToe"
         }
 
