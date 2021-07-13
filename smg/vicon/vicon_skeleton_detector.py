@@ -239,19 +239,6 @@ class ViconSkeletonDetector:
         ViconSkeletonDetector.__try_hallucinate_trapezium_marker("RASI", marker_positions, "RPSI", "LPSI", "LASI")
         ViconSkeletonDetector.__try_hallucinate_trapezium_marker("RPSI", marker_positions, "RASI", "LASI", "LPSI")
 
-        # ViconSkeletonDetector.__try_hallucinate_trapezium_marker("LANK", marker_positions, "LASI", "RASI", "RANK")
-        # ViconSkeletonDetector.__try_hallucinate_trapezium_marker("LELB", marker_positions, "LASI", "RASI", "RELB")
-        # ViconSkeletonDetector.__try_hallucinate_trapezium_marker("LKNE", marker_positions, "LASI", "RASI", "RKNE")
-        # ViconSkeletonDetector.__try_hallucinate_trapezium_marker("LSHO", marker_positions, "LASI", "RASI", "RSHO")
-        # ViconSkeletonDetector.__try_hallucinate_trapezium_marker("LWRA", marker_positions, "LASI", "RASI", "RWRA")
-        # ViconSkeletonDetector.__try_hallucinate_trapezium_marker("LWRB", marker_positions, "LASI", "RASI", "RWRB")
-        # ViconSkeletonDetector.__try_hallucinate_trapezium_marker("RANK", marker_positions, "RASI", "LASI", "LANK")
-        # ViconSkeletonDetector.__try_hallucinate_trapezium_marker("RELB", marker_positions, "RASI", "LASI", "LELB")
-        # ViconSkeletonDetector.__try_hallucinate_trapezium_marker("RKNE", marker_positions, "RASI", "LASI", "LKNE")
-        # ViconSkeletonDetector.__try_hallucinate_trapezium_marker("RSHO", marker_positions, "RASI", "LASI", "LSHO")
-        # ViconSkeletonDetector.__try_hallucinate_trapezium_marker("RWRA", marker_positions, "RASI", "LASI", "LWRA")
-        # ViconSkeletonDetector.__try_hallucinate_trapezium_marker("RWRB", marker_positions, "RASI", "LASI", "LWRB")
-
     @staticmethod
     def __try_hallucinate_trapezium_marker(target_name: str, marker_positions: Dict[str, np.ndarray],
                                            origin_name: str, base_name: str, diagonal_name: str) -> None:
