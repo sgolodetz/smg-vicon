@@ -56,8 +56,7 @@ class ViconFrameSaver:
                     segment_local_rotation = segment_local_rotation.ravel()
                 segment_local_rotations[segment_name] = segment_local_rotation
 
-            # FIXME: Change the string to "Segment Global Poses: ".
-            output += "Segment Poses: "
+            output += "Segment Global Poses: "
             with np.printoptions(linewidth=np.inf):
                 output += repr(segment_global_poses)
             output += "\n"
