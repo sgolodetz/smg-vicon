@@ -82,8 +82,9 @@ class OfflineViconInterface(ViconInterface):
         self.__folder: str = folder
 
         # The names of the files in the folder on disk that contain saved Vicon frame data, in frame number order.
+        frame_filenames: List[str] = [f for f in os.listdir(self.__folder) if f.endswith(".txt")]
         self.__frame_filenames: List[str] = sorted(
-            os.listdir(self.__folder), key=OfflineViconInterface.__get_frame_number
+            frame_filenames, key=OfflineViconInterface.__get_frame_number
         )
 
         # The number originally assigned to the current frame by the live Vicon system.
