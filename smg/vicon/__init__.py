@@ -1,7 +1,8 @@
 from .subject_from_source_cache import SubjectFromSourceCache
 from .vicon_interface import ViconInterface
-from .vicon_skeleton_detector import ViconSkeletonDetector
 
 from .live_vicon_interface import LiveViconInterface
 from .offline_vicon_interface import OfflineViconInterface
 from .vicon_frame_saver import ViconFrameSaver
+from .vicon_skeleton_detector import ViconSkeletonDetector
+from .vicon_util import ViconUtil

@@ -8,7 +8,7 @@ setup(
     version="0.0.1",
     author="Stuart Golodetz",
     author_email="stuart.golodetz@cs.ox.ac.uk",
-    description="Interface to a Vicon system",
+    description="Vicon-based scene capture",
     long_description="",  #long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/sgolodetz/smg-vicon",
