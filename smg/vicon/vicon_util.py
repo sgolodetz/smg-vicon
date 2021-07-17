@@ -24,6 +24,16 @@ class ViconUtil:
         })
 
     @staticmethod
+    def is_designatable(subject_name: str) -> bool:
+        """
+        Determine whether or not the specified Vicon subject is designatable.
+
+        :param subject_name:    The name of the subject.
+        :return:                True, if the specified Vicon subject is designatable, or False otherwise.
+        """
+        return subject_name.startswith("Object")
+
+    @staticmethod
     def is_person(subject_name: str, vicon: ViconInterface) -> bool:
         """
         Determine whether or not the specified Vicon subject is a person.
