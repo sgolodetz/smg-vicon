@@ -66,7 +66,7 @@ class ViconFrameSaver:
                 output += repr(segment_local_rotations)
             output += "\n\n"
 
-        filename: str = os.path.join(self.__folder, f"{self.__vicon.get_frame_number()}.txt")
+        filename: str = os.path.join(self.__folder, f"{self.__vicon.get_frame_number()}.vicon.txt")
 
         with open(filename, "w") as f:
             f.write(output)

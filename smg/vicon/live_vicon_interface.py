@@ -16,7 +16,7 @@ class LiveViconInterface(ViconInterface):
         Construct a live Vicon interface.
 
         .. note::
-            In the Wytham Flight Lab, the host seems to be "169.254.185.150:801" when connecting via Ethernet,
+            In the Wytham Flight Lab, the host seems to be "169.254.226.243:801" when connecting via Ethernet,
             and "192.168.137.1:801" when connecting via the WiFi hotspot. I've set the default to the WiFi one,
             since that's most useful on a day-to-day basis. However, the Ethernet one may also sometimes be
             needed, such as when only one WiFi is available and it's being used to connect to a drone.

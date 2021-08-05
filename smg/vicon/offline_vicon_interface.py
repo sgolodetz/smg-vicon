@@ -82,7 +82,7 @@ class OfflineViconInterface(ViconInterface):
         self.__folder: str = folder
 
         # The names of the files in the folder on disk that contain saved Vicon frame data, in frame number order.
-        frame_filenames: List[str] = [f for f in os.listdir(self.__folder) if f.endswith(".txt")]
+        frame_filenames: List[str] = [f for f in os.listdir(self.__folder) if f.endswith(".vicon.txt")]
         self.__frame_filenames: List[str] = sorted(
             frame_filenames, key=OfflineViconInterface.__get_frame_number
         )
@@ -132,7 +132,7 @@ class OfflineViconInterface(ViconInterface):
             frame_filename: str = self.__frame_filenames[self.__next_frame_idx]
 
             # Get the number of the new frame from the filename.
-            self.__frame_number = int(frame_filename[:-4])
+            self.__frame_number = int(frame_filename[:-len(".vicon.txt")])
 
             # Load the new frame.
             with open(os.path.join(self.__folder, frame_filename)) as f:
@@ -257,7 +257,7 @@ class OfflineViconInterface(ViconInterface):
         :param filename:    The name of a file containing Vicon frame data.
         :return:            The corresponding frame number.
         """
-        frame_number, _ = filename.split(".")
+        frame_number, _, _ = filename.split(".")
         return int(frame_number)
 
     @staticmethod
