@@ -3,6 +3,8 @@ import numpy as np
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional
 
+from .subject_from_source_cache import SubjectFromSourceCache
+
 
 class ViconInterface(ABC):
     """The interface to a Vicon system."""
@@ -85,3 +87,24 @@ class ViconInterface(ABC):
     def terminate(self) -> None:
         """Destroy the Vicon interface."""
         pass
+
+    # PUBLIC METHODS
+
+    def get_image_source_pose(self, subject_name: str, subject_from_source_cache: SubjectFromSourceCache) \
+            -> Optional[np.ndarray]:
+        """
+        Try to get the current 6D pose of the image source associated with the specified subject.
+
+        .. note::
+            This will be a transformation from image source space to Vicon space.
+
+        :param subject_name:                The name of the subject.
+        :param subject_from_source_cache:   A cache of the transformations from image sources to their Vicon subjects.
+        :return:                            The current 6D pose of the image source, if possible, or None otherwise.
+        """
+        subject_from_source: Optional[np.ndarray] = subject_from_source_cache.get(subject_name)
+        subject_from_vicon: Optional[np.ndarray] = self.get_segment_global_pose(subject_name, subject_name)
+        if subject_from_source is not None and subject_from_vicon is not None:
+            return np.linalg.inv(subject_from_vicon) @ subject_from_source
+        else:
+            return None
