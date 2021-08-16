@@ -70,8 +70,9 @@ class ViconUtil:
                     )
                     designations[subject_name].append((skeleton_name, np.linalg.norm(subject_pos - closest_point)))
 
-            # Sort all of the designations for the current subject in non-decreasing order of distance.
-            designations[subject_name] = sorted(designations[subject_name], key=itemgetter(1))
+            # If there any designations for the current subject, sort them in non-decreasing order of distance:
+            if designations.get(subject_name) is not None:
+                designations[subject_name] = sorted(designations[subject_name], key=itemgetter(1))
 
         return designations
 
