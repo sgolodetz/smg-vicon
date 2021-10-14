@@ -78,7 +78,7 @@ class OfflineViconInterface(ViconInterface):
         Construct an offline Vicon system.
 
         :param folder:              A folder on disk that contains saved state from a live Vicon system.
-        :param use_partial_frames:  TODO
+        :param use_partial_frames:  Whether to use the Vicon frames for which no corresponding image is available.
         """
         self.__folder: str = folder
 
