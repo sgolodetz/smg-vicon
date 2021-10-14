@@ -73,16 +73,23 @@ class OfflineViconInterface(ViconInterface):
 
     # CONSTRUCTOR
 
-    def __init__(self, *, folder: str):
+    def __init__(self, *, folder: str, use_partial_frames: bool = False):
         """
         Construct an offline Vicon system.
 
-        :param folder:  A folder on disk that contains saved state from a live Vicon system.
+        :param folder:              A folder on disk that contains saved state from a live Vicon system.
+        :param use_partial_frames:  Whether to use the Vicon frames for which no corresponding image is available.
         """
         self.__folder: str = folder
 
-        # The names of the files in the folder on disk that contain saved Vicon frame data, in frame number order.
-        frame_filenames: List[str] = [f for f in os.listdir(self.__folder) if f.endswith(".vicon.txt")]
+        # The names of the relevant files in the folder that contain saved Vicon frame data, in frame number order.
+        frame_filenames: List[str] = [
+            f.replace(".color.png", ".vicon.txt") for f in os.listdir(self.__folder) if f.endswith(".color.png")
+        ]
+
+        if use_partial_frames or len(frame_filenames) == 0:
+            frame_filenames = [f for f in os.listdir(self.__folder) if f.endswith(".vicon.txt")]
+
         self.__frame_filenames: List[str] = sorted(
             frame_filenames, key=OfflineViconInterface.__get_frame_number
         )
