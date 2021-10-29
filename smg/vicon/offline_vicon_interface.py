@@ -259,7 +259,7 @@ class OfflineViconInterface(ViconInterface):
         Get the frame number corresponding to a file containing Vicon frame data.
 
         .. note::
-            The files are named <frame number>.txt, so we can get the frame numbers directly from the file names.
+            The files are named <frame number>.vicon.txt, so we can get the frame numbers directly from the file names.
 
         :param filename:    The name of a file containing Vicon frame data.
         :return:            The corresponding frame number.
