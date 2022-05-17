@@ -11,7 +11,7 @@ class LiveViconInterface(ViconInterface):
 
     # CONSTRUCTOR
 
-    def __init__(self, host: str = "169.254.226.243:801"):
+    def __init__(self, host: str = "169.254.166.207:801"):
         """
         Construct a live Vicon interface.
 
