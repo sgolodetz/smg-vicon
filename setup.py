@@ -17,8 +17,8 @@ setup(
     install_requires=[
         "numpy",
         "smg-skeletons",
-        "smg-utility",
-        "vg"
+        "vg",
+        "vicon-dssdk"
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
