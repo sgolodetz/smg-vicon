@@ -1,7 +1,7 @@
 from setuptools import find_packages, setup
 
-# with open("README.md", "r") as fh:
-#     long_description = fh.read()
+with open("README.md", "r") as fh:
+    long_description = fh.read()
 
 setup(
     name="smg-vicon",
@@ -9,7 +9,7 @@ setup(
     author="Stuart Golodetz",
     author_email="stuart.golodetz@cs.ox.ac.uk",
     description="Vicon-based scene capture",
-    long_description="",  #long_description,
+    long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/sgolodetz/smg-vicon",
     packages=find_packages(include=["smg.vicon", "smg.vicon.*"]),
@@ -17,8 +17,8 @@ setup(
     install_requires=[
         "numpy",
         "smg-skeletons",
-        "smg-utility",
-        "vg"
+        "vg",
+        "vicon-dssdk"
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
