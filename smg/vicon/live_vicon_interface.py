@@ -1,6 +1,7 @@
 import numpy as np
+import socket
 
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 from vicon_dssdk import ViconDataStream
 
 from .vicon_interface import ViconInterface
@@ -11,14 +12,9 @@ class LiveViconInterface(ViconInterface):
 
     # CONSTRUCTOR
 
-    def __init__(self, host: str = "169.254.166.207:801"):
+    def __init__(self, host: Optional[str] = None):
         """
         Construct a live Vicon interface.
-
-        .. note::
-            In the Wytham Flight Lab, the host seems to be "169.254.226.243:801" when connecting via Ethernet,
-            and "192.168.137.1:801" when connecting via the WiFi hotspot. I've set the default to the Ethernet
-            one, since I only have one WiFi dongle and I need to connect to both the Vicon and the drone.
 
         :param host:    The host (IP address:port) on which the Vicon software is running.
         """
@@ -26,6 +22,29 @@ class LiveViconInterface(ViconInterface):
 
         # Construct the Vicon client.
         self.__client: ViconDataStream.Client = ViconDataStream.Client()
+
+        # If the Vicon host hasn't been explicitly specified, try to auto-detect it. If that fails, raise an exception.
+        if host is None:
+            candidate_hosts: List[Tuple[str, int]] = [
+                ("169.254.166.207", 801),  # Cyber-Physical Systems (Ethernet)
+                ("169.254.226.243", 801),  # Wytham Flight Lab (Ethernet)
+                ("192.168.137.1", 801)     # Wytham Flight Lab (WiFi hotspot)
+            ]
+
+            for candidate_host, candidate_port in candidate_hosts:
+                sock: socket.SocketType = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                sock.settimeout(0.5)
+
+                try:
+                    result: int = sock.connect_ex((candidate_host, candidate_port))
+                    if result == 0:
+                        host = f"{candidate_host}:{candidate_port}"
+                        break
+                finally:
+                    sock.close()
+
+            if host is None:
+                raise RuntimeError("Cannot auto-detect Vicon host - please specify it explicitly")
 
         # Try to connect to the Vicon system (this will raise an exception if it fails).
         self.__client.Connect(host)
